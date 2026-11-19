@@ -151,6 +151,13 @@ body.locked #app{display:none}
 .nowl{position:absolute;left:48px;right:0;height:2px;background:var(--ac);z-index:3;pointer-events:none}
 .nowl::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--ac)}
 .tl .ev.nar .pill{display:none}.tl .ev.nar .row b{white-space:normal}
+
+/* iOS: sem arrastar para os lados e sem rolar o fundo por trás da janela */
+html,body{overflow-x:hidden;max-width:100%}
+.modal{touch-action:none;overscroll-behavior:contain}
+.sheet{touch-action:pan-y;overscroll-behavior:contain;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.sheet *{max-width:100%}
+.sheet input,.sheet select,.sheet textarea{min-width:0}
 </style>
 
 </head>
@@ -203,8 +210,8 @@ function cl(id){return S.c.find(function(x){return x.id==id})}
 function sv(id){return S.s.find(function(x){return x.id==id})}
 function ap(id){return S.a.find(function(x){return x.id==id})}
 function toast(t){var e=$("toast");e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){e.hidden=true},2600)}
-function openM(h){$("sheet").innerHTML=h;$("modal").hidden=false}
-function closeM(){$("modal").hidden=true;$("sheet").innerHTML=""}
+function openM(h){var nw=$("modal").hidden;$("sheet").innerHTML=h;$("modal").hidden=false;if(nw)$("sheet").scrollTop=0}
+function closeM(){$("modal").hidden=true;$("sheet").innerHTML="";$("sheet").scrollTop=0}
 $("modal").addEventListener("mousedown",function(e){if(e.target===this)closeM()});
 
 /* ---- cofre: senha do app + criptografia dos dados neste aparelho ---- */
@@ -260,6 +267,22 @@ function startApp(){render();armIdle();
  else if(CFG.url){setSync("falta a senha");$("bk").click()}
  else setSync("só neste aparelho")}
 
+/* ---- janela (sheet): arrastar para baixo fecha, sem rolar a tela de trás nem mexer para os lados ---- */
+(function(){var m=$("modal"),s=$("sheet"),y0=0,x0=0,dy=0,drag=false,top0=false;
+ function inner(t){while(t&&t!==s){if(t.scrollHeight>t.clientHeight+1){var o=getComputedStyle(t).overflowY;if(o=="auto"||o=="scroll")return t}t=t.parentNode}return null}
+ m.addEventListener("touchstart",function(e){if(e.touches.length!=1)return;y0=e.touches[0].clientY;x0=e.touches[0].clientX;dy=0;drag=false;top0=s.scrollTop<=0;s.style.transition="none"},{passive:true});
+ m.addEventListener("touchmove",function(e){if(e.touches.length!=1)return;var t=e.touches[0],ddy=t.clientY-y0,ddx=t.clientX-x0;
+  if(!s.contains(e.target)){e.preventDefault();return}
+  if(!drag&&Math.abs(ddx)>Math.abs(ddy)){e.preventDefault();return}
+  var n=inner(e.target);if(n&&!drag&&(n.scrollTop>0||ddy<0))return;
+  if(top0&&ddy>0&&s.scrollTop<=0)drag=true;
+  if(drag){e.preventDefault();dy=Math.max(0,ddy);s.style.transform="translateY("+dy+"px)";return}
+  if(s.scrollHeight<=s.clientHeight+1){e.preventDefault();return}
+  if(ddy<0&&s.scrollTop+s.clientHeight>=s.scrollHeight-1)e.preventDefault()},{passive:false});
+ function end(){if(!drag){s.style.transition="";return}drag=false;s.style.transition="transform .18s ease";
+  if(dy>110){s.style.transform="translateY(100%)";setTimeout(function(){closeM();s.style.transition="";s.style.transform=""},180)}
+  else{s.style.transform="";setTimeout(function(){s.style.transition=""},200)}}
+ m.addEventListener("touchend",end);m.addEventListener("touchcancel",end)})();
 /* ---- salvar: aparelho (criptografado) + planilha do Google ---- */
 function save(){lastJson=JSON.stringify(S);dirty=true;meta();persistQ();
  if(CFG.url&&CFG.tok){setSync("salvando…");clearTimeout(saveT);saveT=setTimeout(function(){push()},800)}else setSync(CFG.url?"falta a senha":"só neste aparelho")}
