@@ -4,20 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agenda Manicure</title>
-<meta name="theme-color" content="#a3294f">
+<meta name="theme-color" content="#a3294f" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1518" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Agenda">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap">
+
 <style>
 /* Layout: barra superior + abas; agenda em grade de 30 min; modais sobrepostos */
 :root{--bg:#faf6f6;--card:#fff;--fg:#2a2326;--mu:#7d6f75;--bd:#eadfe2;--ac:#a3294f;--ac2:#f6e3ea;--ok:#2f7d4f;--wa:#b7791f;--er:#b3261e;
 --s-conf:#3b6fb6;--s-sal:#8a5cc2;--s-and:#c27a1a;--s-fin:#2f7d4f;--s-fat:#1f5f3a;--s-pen:#b3261e;--s-can:#8b8085;--s-blk:#5b5559;
---fd:"Fraunces",Georgia,serif;--fb:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+--fd:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;--fb:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1518;--card:#262024;--fg:#f3e9ec;--mu:#b7a5ac;--bd:#3a3036;--ac:#ef7fa2;--ac2:#3b2630;--ok:#6fcf97;--wa:#e6b35a;--er:#ff8a80;--s-conf:#7aa7e6;--s-sal:#b999e6;--s-and:#e6a84f;--s-fin:#6fcf97;--s-fat:#4fb57b;--s-pen:#ff8a80;--s-can:#a89ca1;--s-blk:#a89ca1;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#1b1518;--card:#262024;--fg:#f3e9ec;--mu:#b7a5ac;--bd:#3a3036;--ac:#ef7fa2;--ac2:#3b2630;--ok:#6fcf97;--wa:#e6b35a;--er:#ff8a80;--s-conf:#7aa7e6;--s-sal:#b999e6;--s-and:#e6a84f;--s-fin:#6fcf97;--s-fat:#4fb57b;--s-pen:#ff8a80;--s-can:#a89ca1;--s-blk:#a89ca1;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 var(--fb);padding-block:12px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 var(--fb);-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
 .wrap{max-width:760px;margin:0 auto;min-width:0}
 h1{font:600 22px var(--fd);margin:0}h2{font:600 17px var(--fd);margin:0 0 8px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
@@ -77,19 +84,77 @@ label{font-size:12px;color:var(--mu);font-weight:500}
 .toast[hidden]{display:none}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(20px);opacity:.6}}}
 .ac{position:relative}.acl{position:absolute;left:0;right:0;top:100%;margin-top:-6px;z-index:5;background:var(--card);border:1px solid var(--bd);border-radius:9px;max-height:210px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.18)}.acl[hidden]{display:none}.acl button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px;cursor:pointer;border-bottom:1px solid var(--bd)}.acl button:hover,.acl button:focus-visible{background:var(--ac2)}
-.banner{border-color:var(--wa)}.banner[hidden]{display:none}</style>
+.banner{border-color:var(--wa)}.banner[hidden]{display:none}.acl{box-shadow:0 6px 18px rgba(0,0,0,.18)}
+/* ---- app: cabeçalho, barra de abas, botão flutuante, bloqueio ---- */
+:root{--onac:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onac:#2a1020}}
+:root[data-theme="dark"]{--onac:#2a1020}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+input,select,textarea{font-size:16px}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin:18px 0 6px;font-weight:700}
+.hdr{position:sticky;top:0;z-index:15;background:var(--bg);padding-top:env(safe-area-inset-top,0px);border-bottom:1px solid var(--bd)}
+@supports (background:color-mix(in srgb,red 50%,blue)){.hdr{background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px)}}
+.hdr-in{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:54px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+.hdr h1{font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0}
+.hdr-r{display:flex;align-items:center;gap:2px;min-width:0}
+.sync{max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib{width:40px;height:40px;border-radius:12px;border:0;background:none;color:var(--fg);display:grid;place-items:center;cursor:pointer;flex:none}
+.ib:hover{background:var(--ac2)}
+.ib svg,.tabbar svg,.fab svg{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.ib svg{width:22px;height:22px;stroke-width:1.8}
+.wrap{max-width:760px;margin:0 auto;min-width:0;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(104px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);padding:0 max(8px,env(safe-area-inset-right,0px)) 0 max(8px,env(safe-area-inset-left,0px))}
+.tabbar button{border:0;background:none;color:var(--mu);display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 7px;font-size:11px;font-weight:600;cursor:pointer;min-width:0}
+.tabbar button.on{color:var(--ac)}
+.tabbar svg{width:25px;height:25px;stroke-width:1.8}
+.fab{position:fixed;z-index:19;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--ac);color:var(--onac);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.28);cursor:pointer}
+.fab svg{width:26px;height:26px;stroke-width:2.2}
+.fab[hidden]{display:none}
+.btn.p{color:var(--onac)}.cal button.sel,.cal button.sel small{color:var(--onac)}.tabs .on{color:var(--onac)}
+.sheet{border-radius:20px 20px 0 0}
+.sheet::before{content:"";display:block;width:38px;height:5px;border-radius:3px;background:var(--bd);margin:-6px auto 12px}
+@media (min-width:600px){.sheet{border-radius:20px}}
+.lock{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lock[hidden]{display:none}
+.lk-box{width:100%;max-width:360px;text-align:center;min-width:0}
+.lk-box img{border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.22)}
+.lk-box h2{font-size:22px;margin:14px 0 6px}
+.lk-box form{text-align:left;margin-top:16px}
+.lk-box form[hidden],.lk-box input[hidden],.lk-box label[hidden]{display:none}
+.lk-e{color:var(--er);min-height:20px;font-size:14px;margin:0 0 8px}
+.lk-link{border:0;background:none;color:var(--mu);text-decoration:underline;margin-top:14px;cursor:pointer;font-size:14px}
+.lk-link[hidden]{display:none}
+body.locked #app{display:none}
+.toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+.dl{position:relative;display:inline-flex;align-items:center;margin-left:4px}.dl input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;padding:0;cursor:pointer}
+.fab{right:max(16px,calc((100vw - 760px)/2 + 16px),env(safe-area-inset-right,0px))}
+</style>
 
 </head>
 <body>
-<div class="wrap">
- <div class="top"><h1>Agenda Manicure</h1><div class="row"><span class="sync" id="sync"></span><button class="btn sm" id="bk" type="button">Planilha</button></div></div>
- <div class="card banner" id="cf" hidden><b>A planilha tem uma versão diferente da deste aparelho.</b><div class="mu">Escolha qual manter. A outra fica guardada no Historico da planilha.</div><div class="bar" style="margin:8px 0 0"><button class="btn p" id="cf1" type="button">Usar a da planilha</button><button class="btn" id="cf2" type="button">Manter a deste aparelho</button></div></div>
- <div class="tabs" id="tabs"></div>
- <div id="v"></div>
+<div id="app">
+ <header class="hdr"><div class="hdr-in"><h1 id="ttl">Agenda</h1><div class="hdr-r"><span class="sync" id="sync"></span>
+  <button class="ib" id="lkb" type="button" aria-label="Bloquear o app"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></button>
+  <button class="ib" id="bk" type="button" aria-label="Ajustes"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button></div></div></header>
+ <main class="wrap">
+  <div class="card banner" id="cf" hidden><b>A planilha tem uma versão diferente da deste aparelho.</b><div class="mu">Escolha qual manter. A outra fica guardada no Historico da planilha.</div><div class="bar" style="margin:8px 0 0"><button class="btn p" id="cf1" type="button">Usar a da planilha</button><button class="btn" id="cf2" type="button">Manter a deste aparelho</button></div></div>
+  <div id="v"></div>
+ </main>
+ <button class="fab" id="fab" type="button" aria-label="Novo agendamento" onclick="newAp()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+ <nav class="tabbar" aria-label="Seções"><div class="tabbar-in" id="tabs"></div></nav>
 </div>
+<div class="lock" id="lock" hidden><div class="lk-box">
+ <img src="apple-touch-icon.png" alt="" width="84" height="84">
+ <h2 id="lk-t">Agenda bloqueada</h2><p class="mu" id="lk-m"></p>
+ <form id="lkf"><label for="lk-pw">Senha do app</label><input id="lk-pw" type="password" autocomplete="off" autocapitalize="off"><label for="lk-pw2" id="lk-pw2l">Repita a senha</label><input id="lk-pw2" type="password" autocomplete="off" autocapitalize="off"><p class="lk-e" id="lk-e" role="alert"></p><button class="btn p" id="lk-go" type="submit" style="width:100%;padding:12px">Entrar</button></form>
+ <button class="lk-link" id="lk-f" type="button">Esqueci a senha</button>
+ <div id="lk-fc" hidden><p class="mu">Isso apaga os dados guardados neste aparelho. Os dados da planilha continuam lá, e você os recupera conectando a planilha de novo.</p><div class="bar" style="justify-content:center"><button class="btn d" id="lk-yes" type="button">Apagar deste aparelho</button><button class="btn" id="lk-no" type="button">Voltar</button></div></div>
+</div></div>
 <div class="modal" id="modal" hidden><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast" hidden></div>
 <script>
+
 var ST=["Confirmado","No Salão","Em Andamento","Finalizado","Faturado","Pgto. Pendente","Cancelado"];
 var SC=["conf","sal","and","fin","fat","pen","can"];
 var FP=["PIX","Dinheiro","Cartão de Débito","Cartão de Crédito","Transferência","Outro"];
@@ -120,50 +185,113 @@ function toast(t){var e=$("toast");e.textContent=t;e.hidden=false;clearTimeout(t
 function openM(h){$("sheet").innerHTML=h;$("modal").hidden=false}
 function closeM(){$("modal").hidden=true;$("sheet").innerHTML=""}
 $("modal").addEventListener("mousedown",function(e){if(e.target===this)closeM()});
-/* ---- salvar: navegador + planilha do Google ---- */
+
+/* ---- cofre: senha do app + criptografia dos dados neste aparelho ---- */
 var URL_PADRAO="https://script.google.com/macros/s/AKfycbwhVUR0P2bMvSFzLY5LOFdaWM3uwMWqrAoV9ejx_7VlCuo3eEMswhDiSUzFJ0yxd3ewoQ/exec";
 var CFG={url:"",tok:""},rv=0,dirty=false,saveT=null,busy=false,again=false,lastJson="",CONF=null;
+var KEY=null,VAULT=null,LEG=null,LKMODE="entrar",lockT=null,hiddenAt=0,pq=Promise.resolve();
+var IDLE=10*60*1000,AWAY=5*60*1000,ITER=310000,TE=new TextEncoder(),TD=new TextDecoder();
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-function load(){var r=lsGet("agm2");if(r){try{var o=JSON.parse(r);if(o&&o.a)S=o}catch(e){}}
- try{var c=JSON.parse(lsGet("agm_cfg")||"{}");CFG.url=c.url||"";CFG.tok=c.tok||""}catch(e){}
- if(!CFG.url)CFG.url=URL_PADRAO;
- try{var m=JSON.parse(lsGet("agm_meta")||"{}");rv=m.rv||0;dirty=!!m.dirty}catch(e){}
- lastJson=JSON.stringify(S)}
+function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
+function b64(a){var s="";new Uint8Array(a).forEach(function(x){s+=String.fromCharCode(x)});return btoa(s)}
+function unb64(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
+function deriveKey(pw,salt,iter){return crypto.subtle.importKey("raw",TE.encode(pw),"PBKDF2",false,["deriveKey"]).then(function(k){return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:iter,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])})}
+function encJ(key,o){var iv=crypto.getRandomValues(new Uint8Array(12));return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,TE.encode(JSON.stringify(o))).then(function(c){return b64(iv)+"."+b64(c)})}
+function decJ(key,s){var p=s.split(".");return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(p[0])},key,unb64(p[1])).then(function(b){return JSON.parse(TD.decode(b))})}
+function persist(){if(!KEY||!VAULT)return Promise.resolve();return encJ(KEY,{S:S,tok:CFG.tok}).then(function(d){lsSet("agm_vault",JSON.stringify({v:1,salt:VAULT.salt,iter:VAULT.iter,d:d}))})}
+function persistQ(){pq=pq.then(persist).catch(function(){});return pq}
 function meta(){lsSet("agm_meta",JSON.stringify({rv:rv,dirty:dirty}))}
 function setSync(t){$("sync").textContent=t}
 function stamp(){return new Date().toTimeString().slice(0,5)}
-function save(){lastJson=JSON.stringify(S);lsSet("agm2",lastJson);dirty=true;meta();
+function lkErr(t){$("lk-e").textContent=t}
+function lkBusy(b){$("lk-go").disabled=b;$("lk-go").textContent=b?"Aguarde…":(LKMODE=="criar"?"Criar senha":"Entrar")}
+function showLock(mode){LKMODE=mode;var c=mode=="criar";$("lock").hidden=false;document.body.classList.add("locked");
+ $("lk-t").textContent=c?"Crie a senha do app":"Agenda bloqueada";
+ $("lk-m").textContent=c?"Ela protege os dados guardados neste aparelho. Use 6 caracteres ou mais. Não há como recuperá-la, mas a planilha mantém uma cópia dos seus dados.":"Digite a senha do app para abrir.";
+ $("lk-pw2").hidden=!c;$("lk-pw2l").hidden=!c;$("lk-f").hidden=c;$("lk-fc").hidden=true;$("lk-go").hidden=false;$("lkf").hidden=false;
+ $("lk-pw").value="";$("lk-pw2").value="";lkErr("");lkBusy(false);setTimeout(function(){$("lk-pw").focus()},60)}
+function unlocked(){$("lock").hidden=true;document.body.classList.remove("locked");startApp()}
+$("lkf").onsubmit=function(e){e.preventDefault();var pw=$("lk-pw").value;lkErr("");
+ if(LKMODE=="criar"){
+  if(pw.length<6){lkErr("Use ao menos 6 caracteres.");return}
+  if(pw!==$("lk-pw2").value){lkErr("As senhas não conferem.");return}
+  lkBusy(true);var salt=crypto.getRandomValues(new Uint8Array(16));
+  deriveKey(pw,salt,ITER).then(function(k){KEY=k;VAULT={salt:b64(salt),iter:ITER};S=LEG&&LEG.S?LEG.S:defS();CFG.tok=LEG&&LEG.tok?LEG.tok:"";lastJson=JSON.stringify(S);return persist()})
+  .then(function(){lsDel("agm2");lsSet("agm_cfg",JSON.stringify({url:CFG.url}));LEG=null;lkBusy(false);unlocked()},function(){KEY=null;VAULT=null;lkBusy(false);lkErr("Não foi possível criar a senha neste navegador.")})
+ }else{
+  lkBusy(true);
+  deriveKey(pw,unb64(VAULT.salt),VAULT.iter).then(function(k){return decJ(k,VAULT.d).then(function(o){return {k:k,o:o}})})
+  .then(function(r){KEY=r.k;S=r.o.S;CFG.tok=r.o.tok||"";lastJson=JSON.stringify(S);lkBusy(false);unlocked()},function(){lkBusy(false);lkErr("Senha incorreta.");$("lk-pw").value="";$("lk-pw").focus()})}};
+$("lk-f").onclick=function(){$("lkf").hidden=true;$("lk-fc").hidden=false;$("lk-e").textContent=""};
+$("lk-no").onclick=function(){showLock("entrar")};
+$("lk-yes").onclick=function(){lsDel("agm_vault");lsDel("agm2");lsDel("agm_meta");VAULT=null;LEG=null;KEY=null;rv=0;dirty=false;S=defS();CFG.tok="";lastJson="";showLock("criar")};
+function lockNow(){if(!KEY)return;clearTimeout(lockT);clearTimeout(saveT);
+ persistQ().then(function(){KEY=null;S=defS();CFG.tok="";lastJson="";CONF=null;$("cf").hidden=true;closeM();$("v").innerHTML="";setSync("");showLock("entrar")})}
+function armIdle(){clearTimeout(lockT);if(KEY)lockT=setTimeout(lockNow,IDLE)}
+["pointerdown","keydown","scroll"].forEach(function(e){document.addEventListener(e,armIdle,{passive:true})});
+$("lkb").onclick=lockNow;
+function changePw(){var a=$("np1").value,b=$("np2").value;if(a.length<6){toast("Use ao menos 6 caracteres");return}if(a!==b){toast("As senhas não conferem");return}
+ var salt=crypto.getRandomValues(new Uint8Array(16));
+ deriveKey(a,salt,ITER).then(function(k){KEY=k;VAULT={salt:b64(salt),iter:ITER};return persistQ()}).then(function(){closeM();toast("Senha do app alterada")})}
+function startApp(){render();armIdle();
+ if(CFG.url&&CFG.tok){if(dirty)push();else pull()}
+ else if(CFG.url){setSync("falta a senha");$("bk").click()}
+ else setSync("só neste aparelho")}
+
+/* ---- salvar: aparelho (criptografado) + planilha do Google ---- */
+function save(){lastJson=JSON.stringify(S);dirty=true;meta();persistQ();
  if(CFG.url&&CFG.tok){setSync("salvando…");clearTimeout(saveT);saveT=setTimeout(function(){push()},800)}else setSync(CFG.url?"falta a senha":"só neste aparelho")}
 function api(b){return fetch(CFG.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({tok:CFG.tok},b))}).then(function(r){return r.json()})}
-function push(force){if(!CFG.url||!CFG.tok||CONF)return;if(busy){again=true;return}busy=true;
- api({op:"save",baseV:rv,json:lastJson,force:force===true}).then(function(r){
-  if(r.ok){rv=r.v;dirty=false;meta();setSync("salvo na planilha às "+stamp())}
+function push(force){if(!KEY||!CFG.url||!CFG.tok||CONF)return;if(busy){again=true;return}busy=true;
+ api({op:"save",baseV:rv,json:lastJson,force:force===true}).then(function(r){if(!KEY)return;
+  if(r.ok){rv=r.v;dirty=false;meta();setSync("salvo "+stamp())}
   else if(r.conflict){CONF=r;$("cf").hidden=false;window.scrollTo(0,0);setSync("aguardando sua escolha")}
   else setSync("erro: "+(r.error||"sem resposta"))
- }).catch(function(){setSync("sem conexão (será reenviado)")}).then(function(){busy=false;if(again){again=false;push()}})}
-function pull(){if(!CFG.url||!CFG.tok||dirty||busy||CONF)return;busy=true;
- api({op:"load"}).then(function(r){
+ }).catch(function(){setSync("offline: envio pendente")}).then(function(){busy=false;if(again){again=false;push()}})}
+function pull(){if(!KEY||!CFG.url||!CFG.tok||dirty||busy||CONF)return;busy=true;
+ api({op:"load"}).then(function(r){if(!KEY)return;
   if(!r.ok){setSync("erro: "+(r.error||""));return}
-  if(r.v==0){dirty=true;meta();busy=false;push();return}
-  if(r.v>rv&&r.json){try{var o=JSON.parse(r.json);if(o&&o.a){S=o;rv=r.v;lastJson=r.json;dirty=false;meta();lsSet("agm2",r.json);render()}}catch(e){}}
-  setSync("sincronizado às "+stamp())
+  if(r.v==0){dirty=true;meta();setTimeout(function(){push()},50);return}
+  if(r.v>rv&&r.json){try{var o=JSON.parse(r.json);if(o&&o.a){S=o;rv=r.v;lastJson=r.json;dirty=false;meta();persistQ();render()}}catch(e){}}
+  setSync("sincronizado "+stamp())
  }).catch(function(){setSync("sem conexão")}).then(function(){busy=false})}
-function useRemote(){try{S=JSON.parse(CONF.json);rv=CONF.v;lastJson=CONF.json;lsSet("agm2",lastJson);dirty=false;meta()}catch(e){}CONF=null;$("cf").hidden=true;setSync("sincronizado às "+stamp());render()}
+function useRemote(){try{S=JSON.parse(CONF.json);rv=CONF.v;lastJson=CONF.json;dirty=false;meta();persistQ()}catch(e){}CONF=null;$("cf").hidden=true;setSync("sincronizado "+stamp());render()}
 function keepLocal(){rv=CONF.v;CONF=null;$("cf").hidden=true;meta();push(true)}
 $("cf1").onclick=useRemote;$("cf2").onclick=keepLocal;
-document.addEventListener("visibilitychange",function(){if(!document.hidden&&CFG.url){if(dirty)push();else pull()}});
-window.addEventListener("online",function(){if(CFG.url){if(dirty)push();else pull()}});
-/* ---- planilha e backup ---- */
-$("bk").onclick=function(){openM('<h2>Planilha e backup</h2><p class="mu">Os dados ficam neste aparelho e, com a planilha conectada, também no Google Sheets.</p><label for="su">Endereço do Apps Script (já configurado)</label><input id="su" value="'+esc(CFG.url)+'" placeholder="https://script.google.com/macros/s/…/exec"><label for="st">Senha</label><input id="st" type="password" value="'+esc(CFG.tok)+'"><div class="bar"><button class="btn p" id="sc" type="button">Salvar e conectar</button><button class="btn" id="sy" type="button">Sincronizar agora</button></div><h2 style="margin-top:14px">Backup em arquivo</h2><div class="bar"><button class="btn p" id="bd" type="button">Baixar backup</button><button class="btn" id="bc" type="button">Baixar clientes (CSV)</button></div><label for="bf">Restaurar de arquivo .json</label><input type="file" id="bf" accept=".json,application/json"><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
- $("sc").onclick=function(){var u=$("su").value.trim();if(u.indexOf("https://script.google.com/")!=0){toast("O endereço deve começar com https://script.google.com/");return}
-  if(!$("st").value){toast("Informe a senha");return}CFG.url=u;CFG.tok=$("st").value;lsSet("agm_cfg",JSON.stringify(CFG));dirty=true;meta();CONF=null;$("cf").hidden=true;setSync("conectando…");closeM();push();toast("Conectando à planilha…")};
- $("sy").onclick=function(){if(!CFG.tok){toast("Informe a senha primeiro");return}if(dirty)push();else pull();toast("Sincronizando…")};
+function resync(){if(KEY&&CFG.url&&CFG.tok){if(dirty)push();else pull()}}
+document.addEventListener("visibilitychange",function(){
+ if(document.hidden){hiddenAt=Date.now();return}
+ if(KEY&&hiddenAt&&Date.now()-hiddenAt>AWAY){lockNow();return}
+ resync()});
+window.addEventListener("online",resync);
+/* ---- ajustes: planilha, backup e segurança ---- */
+$("bk").onclick=function(){openM('<h2>Ajustes</h2><h3>Planilha do Google</h3><p class="mu">Os dados ficam neste aparelho e, com a planilha conectada, também no Google Sheets.</p><label for="su">Endereço do Apps Script</label><input id="su" value="'+esc(CFG.url)+'"><label for="st">Senha da planilha</label><input id="st" type="password" autocomplete="off" value="'+esc(CFG.tok)+'"><div class="bar"><button class="btn p" id="sc" type="button">Salvar e conectar</button><button class="btn" id="sy" type="button">Sincronizar agora</button></div>'+
+ '<h3>Backup em arquivo</h3><div class="bar"><button class="btn p" id="bd" type="button">Baixar backup</button><button class="btn" id="bc" type="button">Baixar clientes (CSV)</button></div><label for="bf">Restaurar de arquivo .json</label><input type="file" id="bf" accept=".json,application/json">'+
+ '<h3>Segurança</h3><p class="mu">O app bloqueia sozinho depois de 5 minutos fora da tela ou 10 minutos parado.</p><label for="np1">Nova senha do app</label><input id="np1" type="password" autocomplete="new-password"><label for="np2">Repita a nova senha</label><input id="np2" type="password" autocomplete="new-password"><div class="bar"><button class="btn" type="button" onclick="changePw()">Alterar senha do app</button><button class="btn" type="button" onclick="closeM();lockNow()">Bloquear agora</button></div><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
+ $("sc").onclick=function(){var u=$("su").value.trim();if(u.indexOf("https://script.google.com/")!=0){toast("O endereço deve começar com https://script.google.com/");return}if(!$("st").value){toast("Informe a senha da planilha");return}
+  CFG.url=u;CFG.tok=$("st").value;lsSet("agm_cfg",JSON.stringify({url:CFG.url}));CONF=null;$("cf").hidden=true;
+  dirty=(S.c.length+S.a.length+S.f.length)>0;meta();persistQ();setSync("conectando…");closeM();if(dirty)push();else pull();toast("Conectando à planilha…")};
+ $("sy").onclick=function(){if(!CFG.tok){toast("Informe a senha da planilha primeiro");return}if(dirty)push();else pull();toast("Sincronizando…")};
  $("bd").onclick=function(){dl("agenda-manicure-"+iso(new Date())+".json",JSON.stringify(S))};
  $("bc").onclick=function(){var r=["Nome;Apelido;Telefone;Nascimento;Observações"].concat(S.c.map(function(c){return [c.n,c.ap,c.w,c.nasc,c.ob].map(function(x){return '"'+String(x||"").replace(/"/g,'""')+'"'}).join(";")}));dl("clientes.csv","﻿"+r.join("\n"))};
  $("bf").onchange=function(){var f=this.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var o=JSON.parse(rd.result);if(!o||!o.a||!o.c||!o.s)throw 1;S=o;save();closeM();render();toast("Backup restaurado")}catch(e){toast("Arquivo inválido")}};rd.readAsText(f)}};
 function dl(name,data){var a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type:"application/octet-stream"}));a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove()},500)}
+/* ---- início ---- */
+function boot(){
+ if(!window.crypto||!crypto.subtle){$("lock").hidden=false;document.body.classList.add("locked");$("lk-t").textContent="Navegador sem criptografia";$("lk-m").textContent="Abra a agenda pelo endereço https do site para continuar.";$("lkf").hidden=true;return}
+ var c={};try{c=JSON.parse(lsGet("agm_cfg")||"{}")}catch(e){}
+ CFG.url=c.url||URL_PADRAO;
+ try{var m=JSON.parse(lsGet("agm_meta")||"{}");rv=m.rv||0;dirty=!!m.dirty}catch(e){}
+ var raw=lsGet("agm_vault");if(raw){try{VAULT=JSON.parse(raw)}catch(e){VAULT=null}}
+ if(VAULT){showLock("entrar");return}
+ var old=null,l=lsGet("agm2");if(l){try{var o=JSON.parse(l);if(o&&o.a)old=o}catch(e){}}
+ if(old||c.tok)LEG={S:old,tok:c.tok||""};
+ if(old&&!lsGet("agm_meta")){dirty=true;meta()}
+ showLock("criar")}
+
 /* ---- agenda ---- */
+var fo=false;
 function dayEvs(dt){return S.a.filter(function(a){if(a.dt!=dt)return false;
  if(a.blk)return !sf.length&&!q;
  if(sf.length&&sf.indexOf(a.st)<0)return false;
@@ -175,11 +303,11 @@ function evH(a){
  return '<div class="ev'+(a.st=="Cancelado"?" cancelled":"")+'" style="--c:var(--s-'+SC[i]+')" onclick="openAp(\''+a.id+'\')"><div class="row"><b>'+a.h+' · '+esc(c?c.n:"Cliente removida")+'</b><span class="pill" style="--c:var(--s-'+SC[i]+')">'+a.st+'</span></div><div class="mu">'+esc(n)+' · '+a.dur+' min · '+brl(a.p)+'</div></div>'}
 function nav(n){if(view=="1d")day=addD(day,n);else if(view=="7d")day=addD(day,7*n);else{var d=pd(day);d.setMonth(d.getMonth()+n,1);day=iso(d)}render()}
 function agendaV(){
- var d=pd(day),lab=view=="mes"?MES[d.getMonth()]+" "+d.getFullYear():DOW[d.getDay()]+", "+d.getDate()+" de "+MES[d.getMonth()]+" "+d.getFullYear();
- var h='<div class="bar"><button class="btn p" type="button" onclick="newAp()">Novo agendamento</button><button class="btn" type="button" onclick="openBlk()">Bloquear</button><span class="seg">'+["1d","7d","mes"].map(function(v){return '<button type="button" class="'+(view==v?"on":"")+'" onclick="view=\''+v+'\';render()">'+(v=="mes"?"Mês":v.toUpperCase())+'</button>'}).join("")+'</span></div>';
- h+='<div class="bar"><button class="btn sm" type="button" aria-label="Anterior" onclick="nav(-1)">‹</button><button class="btn sm" type="button" onclick="day=iso(new Date());render()">Hoje</button><button class="btn sm" type="button" aria-label="Próximo" onclick="nav(1)">›</button><b style="margin-left:4px">'+esc(lab)+'</b><input type="date" id="jd" aria-label="Ir para a data" value="'+day+'" onchange="day=this.value||day;render()" style="width:auto;margin:0 0 0 auto"></div>';
- h+='<div class="bar"><input id="qs" class="grow" style="margin:0" placeholder="Buscar cliente ou serviço" value="'+esc(q)+'" oninput="q=this.value;var p=this.selectionStart;render();var e=$(\'qs\');e.focus();e.setSelectionRange(p,p)"></div>';
- h+='<div class="chips">'+ST.map(function(s,i){return '<button type="button" class="chip'+(sf.indexOf(s)>=0?" on":"")+'" onclick="togSf(\''+s+'\')"><span style="color:var(--s-'+SC[i]+')">●</span> '+s+'</button>'}).join("")+(sf.length||q?'<button type="button" class="chip" onclick="sf=[];q=\'\';render()">Limpar</button>':"")+'</div>';
+ var d=pd(day),lab=view=="mes"?MES[d.getMonth()]+" "+d.getFullYear():DOW[d.getDay()]+", "+d.getDate()+" "+MES[d.getMonth()].slice(0,3)+" "+d.getFullYear();
+ var h='<div class="bar"><button class="btn" type="button" onclick="openBlk()">Bloquear horário</button><button class="btn" type="button" onclick="fo=!fo;render()">Filtros'+((sf.length||q)?' ('+(sf.length+(q?1:0))+')':"")+'</button><span class="seg">'+["1d","7d","mes"].map(function(v){return '<button type="button" class="'+(view==v?"on":"")+'" onclick="view=\''+v+'\';render()">'+(v=="mes"?"Mês":v.toUpperCase())+'</button>'}).join("")+'</span></div>';
+ h+='<div class="bar"><button class="btn sm" type="button" aria-label="Anterior" onclick="nav(-1)">‹</button><button class="btn sm" type="button" onclick="day=iso(new Date());render()">Hoje</button><button class="btn sm" type="button" aria-label="Próximo" onclick="nav(1)">›</button><span class="dl"><b>'+esc(lab)+' ▾</b><input type="date" id="jd" aria-label="Escolher a data" value="'+day+'" onchange="day=this.value||day;render()"></span></div>';
+ if(fo||sf.length||q)h+='<div class="bar"><input id="qs" class="grow" style="margin:0" placeholder="Buscar cliente ou serviço" value="'+esc(q)+'" oninput="q=this.value;var p=this.selectionStart;render();var e=$(\'qs\');e.focus();e.setSelectionRange(p,p)"></div>';
+ if(fo||sf.length||q)h+='<div class="chips">'+ST.map(function(s,i){return '<button type="button" class="chip'+(sf.indexOf(s)>=0?" on":"")+'" onclick="togSf(\''+s+'\')"><span style="color:var(--s-'+SC[i]+')">●</span> '+s+'</button>'}).join("")+(sf.length||q?'<button type="button" class="chip" onclick="sf=[];q=\'\';render()">Limpar</button>':"")+'</div>';
  h+=view=="1d"?dayH():view=="7d"?weekH():monthH();return h}
 function togSf(s){var i=sf.indexOf(s);if(i>=0)sf.splice(i,1);else sf.push(s);render()}
 function dayH(){var es=dayEvs(day),now=new Date(),nm=now.getHours()*60+now.getMinutes(),isT=day==iso(now),h="";
@@ -239,6 +367,7 @@ function delAp(){var a=ap(D.id);if(a&&a.fid)S.f=S.f.filter(function(x){return x.
 function openBlk(id){var a=id?ap(id):null;openM('<h2>Bloquear horário</h2><div class="g2"><div><label for="bd1">Data</label><input type="date" id="bd1" value="'+(a?a.dt:day)+'"></div><div><label for="bh">Horário</label><input type="time" id="bh" value="'+(a?a.h:"12:00")+'"></div></div><label for="bdu">Duração (min)</label><input type="number" id="bdu" min="15" step="15" value="'+(a?a.dur:60)+'"><label for="bn">Motivo</label><input id="bn" value="'+esc(a?a.nt:"")+'" placeholder="Almoço, folga, consulta…"><div class="bar"><button class="btn p" type="button" onclick="saveBlk(\''+(id||"")+'\')">Salvar</button><button class="btn" type="button" onclick="closeM()">Cancelar</button>'+(a?'<button class="btn d" type="button" onclick="S.a=S.a.filter(function(x){return x.id!=\''+id+'\'});save();closeM();render()">Remover</button>':"")+'</div>')}
 function saveBlk(id){var o={blk:true,dt:$("bd1").value,h:$("bh").value,dur:+$("bdu").value||60,nt:$("bn").value};if(!o.dt||!o.h){toast("Informe data e horário");return}
  if(id)Object.assign(ap(id),o);else S.a.push(Object.assign({id:uid()},o));day=o.dt;save();closeM();render()}
+
 /* ---- clientes ---- */
 function stats(c){var l=S.a.filter(function(a){return a.c==c.id&&!a.blk&&a.st!="Cancelado"&&a.dt<=iso(new Date())&&(a.st=="Finalizado"||a.st=="Faturado")});
  return{v:l.length,u:l.map(function(a){return a.dt}).sort().pop()||"",t:l.reduce(function(s,a){return s+a.p},0)}}
@@ -290,6 +419,7 @@ function saveFin(id){var o={tp:$("ftR").classList.contains("on")?"R":"P",v:+$("f
  save();closeM();render()}
 function baixa(id){var f=S.f.find(function(x){return x.id==id});f.pg=iso(new Date());save();closeM();render()}
 function delFin(id){var f=S.f.find(function(x){return x.id==id});if(f&&f.ap){var a=ap(f.ap);if(a){a.st="Finalizado";delete a.fid}}S.f=S.f.filter(function(x){return x.id!=id});save();closeM();render()}
+
 /* ---- importar listas ---- */
 function norm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"")}
 function parseTab(t){t=t.replace(/^﻿/,"");var f=t.split(/\r?\n/)[0]||"",d=f.indexOf("\t")>=0?"\t":(f.split(";").length>=f.split(",").length?";":","),rows=[],row=[],cur="",q=false;
@@ -317,11 +447,16 @@ function doImp(k){var rows=parseTab($("imt").value);if(!rows.length){toast("Cole
   else{if(S.s.some(function(s){return s.n.toLowerCase()==nome.toLowerCase()})){skip++;return}
    S.s.push({id:uid(),n:nome,e:g("e")||"Geral",d:ndur(g("d")),p:nnum(g("p")),pm:nnum(g("pm")),ds:g("ds")});add++}});
  if(add)save();closeM();render();toast(add+" importado(s)"+(skip?" · "+skip+" ignorado(s): sem nome ou já existiam":""))}
-/* ---- início ---- */
+
+var IC={agenda:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',clientes:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 5.2a3.3 3.3 0 0 1 0 6.6M18 14.8c2 .6 3.2 2.3 3.5 5.2"/></svg>',servicos:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/></svg>',fin:'<svg viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="3.5" y="7.5" width="17" height="12" rx="3"/><path d="M16 13.5h2"/></svg>'};
 var T=[["agenda","Agenda"],["clientes","Clientes"],["servicos","Serviços"],["fin","Financeiro"]];
-function render(){$("tabs").innerHTML=T.map(function(t){return '<button type="button" class="'+(tab==t[0]?"on":"")+'" onclick="if(tab!=\''+t[0]+'\'){q=\'\';sf=[]}tab=\''+t[0]+'\';render()">'+t[1]+'</button>'}).join("");
- var y=window.scrollY;$("v").innerHTML=tab=="agenda"?agendaV():tab=="clientes"?clientsV():tab=="servicos"?servicesV():finV();window.scrollTo(0,y)}
-load();render();if(CFG.url&&CFG.tok){if(dirty)push();else pull()}else if(CFG.url){setSync("falta a senha");$("bk").click()}else setSync("só neste aparelho");
+function render(){if(!KEY)return;var y=window.scrollY;
+ $("tabs").innerHTML=T.map(function(t){return '<button type="button" class="'+(tab==t[0]?"on":"")+'" aria-label="'+t[1]+'" onclick="if(tab!=\''+t[0]+'\'){q=\'\';sf=[]}tab=\''+t[0]+'\';render()">'+IC[t[0]]+'<span>'+t[1]+'</span></button>'}).join("");
+ $("ttl").textContent=T.filter(function(t){return t[0]==tab})[0][1];$("fab").hidden=tab!="agenda";
+ $("v").innerHTML=tab=="agenda"?agendaV():tab=="clientes"?clientsV():tab=="servicos"?servicesV():finV();window.scrollTo(0,y)}
+
+boot();
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")==0)navigator.serviceWorker.register("sw.js").catch(function(){});
 </script>
 
 </body>
