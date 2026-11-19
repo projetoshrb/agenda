@@ -129,6 +129,15 @@ body.locked #app{display:none}
 .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .dl{position:relative;display:inline-flex;align-items:center;margin-left:4px}.dl input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;padding:0;cursor:pointer}
 .fab{right:max(16px,calc((100vw - 760px)/2 + 16px),env(safe-area-inset-right,0px))}
+/* horários marcados em amarelo */
+:root{--evbg:#fff1a8;--evbd:#e8cf58;--evfg:#3a2f00}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--evbg:#4d4210;--evbd:#7a6a1c;--evfg:#fff3c4}}
+:root[data-theme="dark"]{--evbg:#4d4210;--evbd:#7a6a1c;--evfg:#fff3c4}
+.ev{background:var(--evbg);border-color:var(--evbd);border-left-color:var(--c,var(--s-conf));color:var(--evfg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.ev .mu{color:var(--evfg);opacity:.75}
+.ev.cancelled{background:var(--card);border-color:var(--bd);color:inherit}
+.ev[style*="s-blk"]{background:var(--card);border-color:var(--bd);color:inherit}
+.ev[style*="s-blk"] .mu{color:var(--mu,inherit)}
 </style>
 
 </head>
