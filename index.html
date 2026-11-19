@@ -247,11 +247,11 @@ function push(force){if(!KEY||!CFG.url||!CFG.tok||CONF)return;if(busy){again=tru
  api({op:"save",baseV:rv,json:lastJson,force:force===true}).then(function(r){if(!KEY)return;
   if(r.ok){rv=r.v;dirty=false;meta();setSync("salvo "+stamp())}
   else if(r.conflict){CONF=r;$("cf").hidden=false;window.scrollTo(0,0);setSync("aguardando sua escolha")}
-  else setSync("erro: "+(r.error||"sem resposta"))
+  else{setSync("erro na planilha");toast("Planilha: "+(r.error||"sem resposta"))}
  }).catch(function(){setSync("offline: envio pendente")}).then(function(){busy=false;if(again){again=false;push()}})}
 function pull(){if(!KEY||!CFG.url||!CFG.tok||dirty||busy||CONF)return;busy=true;
  api({op:"load"}).then(function(r){if(!KEY)return;
-  if(!r.ok){setSync("erro: "+(r.error||""));return}
+  if(!r.ok){setSync("erro na planilha");toast("Planilha: "+(r.error||"sem resposta"));return}
   if(r.v==0){dirty=true;meta();setTimeout(function(){push()},50);return}
   if(r.v>rv&&r.json){try{var o=JSON.parse(r.json);if(o&&o.a){S=o;rv=r.v;lastJson=r.json;dirty=false;meta();persistQ();render()}}catch(e){}}
   setSync("sincronizado "+stamp())
