@@ -325,11 +325,12 @@ function agendaV(){
 function togSf(s){var i=sf.indexOf(s);if(i>=0)sf.splice(i,1);else sf.push(s);render()}
 function dayH(){var es=dayEvs(day),now=new Date(),nm=now.getHours()*60+now.getMinutes(),isT=day==iso(now),h="";
  if(!es.length)h+='<div class="empty">Nenhum horário neste dia.<br><button class="btn p" style="margin-top:8px" type="button" onclick="newAp()">Agendar agora</button></div>';
- var by={};es.forEach(function(a){var k=Math.min(27,Math.max(0,Math.floor((tm(a.h)-420)/30)));(by[k]=by[k]||[]).push(a)});
+ var by={};es.forEach(function(a){var k=Math.min(47,Math.max(0,Math.floor(tm(a.h)/30)));(by[k]=by[k]||[]).push(a)});
  var tot=es.filter(function(a){return !a.blk&&a.st!="Cancelado"}).length;
  var rev=es.filter(function(a){return !a.blk&&a.st!="Cancelado"}).reduce(function(s,a){return s+a.p},0);
  h='<div class="g4"><div class="kpi"><b>'+tot+'</b><span>atendimentos no dia</span></div><div class="kpi"><b>'+brl(rev)+'</b><span>previsto no dia</span></div></div>'+h;
- for(var k=0;k<28;k++){var m=420+k*30,cur=isT&&nm>=m&&nm<m+30;h+='<div class="slot'+(cur?" now":"")+'"><div class="hh">'+hm(m)+'</div><div>'+(by[k]||[]).map(evH).join("")+'</div></div>'}
+ var ks=Object.keys(by).map(Number),tk=ks.length?Math.min.apply(null,ks):(isT?Math.max(0,Math.floor(nm/30)-1):14);
+ for(var k=0;k<48;k++){var m=k*30,cur=isT&&nm>=m&&nm<m+30;h+='<div class="slot'+(cur?" now":"")+(k==tk?" go":"")+'"><div class="hh">'+hm(m)+'</div><div>'+(by[k]||[]).map(evH).join("")+'</div></div>'}
  return h}
 function weekH(){var d=pd(day),st=addD(day,-d.getDay()),h='<div class="week">';
  for(var i=0;i<7;i++){var x=addD(st,i),dd=pd(x);h+='<div class="wd'+(x==iso(new Date())?" today":"")+'"><h3>'+DOW[i]+" "+dd.getDate()+'</h3>'+(dayEvs(x).map(evH).join("")||'<div class="mu">—</div>')+'<button class="btn sm" type="button" onclick="day=\''+x+'\';newAp()">+</button></div>'}
@@ -348,8 +349,8 @@ function acOut(){setTimeout(function(){var b=$("acl");if(b)b.hidden=true},150)}
 function pickC(id){var c=cl(id);$("ac").value=id;$("acs").value=c.n+(c.ap?" ("+c.ap+")":"");$("acl").hidden=true}
 
 var D=null;
-function nextFree(dt){var es=S.a.filter(function(a){return a.dt==dt}),t=dt==iso(new Date())?Math.ceil((new Date().getHours()*60+new Date().getMinutes())/30)*30:540;t=Math.max(t,420);
- while(t<1260&&es.some(function(a){return tm(a.h)<=t&&t<tm(a.h)+a.dur}))t+=30;return hm(Math.min(t,1260))}
+function nextFree(dt){var es=S.a.filter(function(a){return a.dt==dt}),t=dt==iso(new Date())?Math.ceil((new Date().getHours()*60+new Date().getMinutes())/30)*30:540;t=Math.max(t,0);
+ while(t<1410&&es.some(function(a){return tm(a.h)<=t&&t<tm(a.h)+a.dur}))t+=30;return hm(Math.min(t,1410))}
 function E(){return String.fromCodePoint.apply(null,arguments)}
 function lembMsg(a){var W=["Domingo","Segunda-Feira","Terça-Feira","Quarta-Feira","Quinta-Feira","Sexta-Feira","Sábado"],q=(a.dt||"").split("-"),dn=q.length==3?W[new Date(+q[0],+q[1]-1,+q[2]).getDay()]:"";
  var sn=(a.sv||[]).map(function(id){var o=sv(id);return o?o.n.replace(/\([^)]*\)/g,"").replace(/\s+/g," ").trim():""}).filter(Boolean).join(" + ");
@@ -489,7 +490,7 @@ var T=[["agenda","Agenda"],["clientes","Clientes"],["servicos","Serviços"],["fi
 function render(){if(!KEY)return;var y=window.scrollY;
  $("tabs").innerHTML=T.map(function(t){return '<button type="button" class="'+(tab==t[0]?"on":"")+'" aria-label="'+t[1]+'" onclick="if(tab!=\''+t[0]+'\'){q=\'\';sf=[]}tab=\''+t[0]+'\';render()">'+IC[t[0]]+'<span>'+t[1]+'</span></button>'}).join("");
  $("ttl").textContent=T.filter(function(t){return t[0]==tab})[0][1];$("fab").hidden=tab!="agenda";
- $("v").innerHTML=tab=="agenda"?agendaV():tab=="clientes"?clientsV():tab=="servicos"?servicesV():finV();window.scrollTo(0,y)}
+ $("v").innerHTML=tab=="agenda"?agendaV():tab=="clientes"?clientsV():tab=="servicos"?servicesV():finV();window.scrollTo(0,y);var vk=tab=="agenda"&&view=="1d"?day:"";if(vk&&vk!=window._vk){var g=document.querySelector(".slot.go");if(g)window.scrollTo(0,Math.max(0,g.getBoundingClientRect().top+window.scrollY-130))}window._vk=vk}
 
 boot();
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")==0)navigator.serviceWorker.register("sw.js").catch(function(){});
