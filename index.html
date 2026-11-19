@@ -138,7 +138,6 @@ body.locked #app{display:none}
   <button class="ib" id="lkb" type="button" aria-label="Bloquear o app"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></button>
   <button class="ib" id="bk" type="button" aria-label="Ajustes"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button></div></div></header>
  <main class="wrap">
-  <div class="card banner" id="cf" hidden><b>A planilha tem uma versão diferente da deste aparelho.</b><div class="mu">Escolha qual manter. A outra fica guardada no Historico da planilha.</div><div class="bar" style="margin:8px 0 0"><button class="btn p" id="cf1" type="button">Usar a da planilha</button><button class="btn" id="cf2" type="button">Manter a deste aparelho</button></div></div>
   <div id="v"></div>
  </main>
  <button class="fab" id="fab" type="button" aria-label="Novo agendamento" onclick="newAp()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -227,7 +226,7 @@ $("lk-f").onclick=function(){$("lkf").hidden=true;$("lk-fc").hidden=false;$("lk-
 $("lk-no").onclick=function(){showLock("entrar")};
 $("lk-yes").onclick=function(){lsDel("agm_vault");lsDel("agm2");lsDel("agm_meta");VAULT=null;LEG=null;KEY=null;rv=0;dirty=false;S=defS();CFG.tok="";lastJson="";showLock("criar")};
 function lockNow(){if(!KEY)return;clearTimeout(lockT);clearTimeout(saveT);
- persistQ().then(function(){KEY=null;S=defS();CFG.tok="";lastJson="";CONF=null;$("cf").hidden=true;closeM();$("v").innerHTML="";setSync("");showLock("entrar")})}
+ persistQ().then(function(){KEY=null;S=defS();CFG.tok="";lastJson="";CONF=null;closeM();$("v").innerHTML="";setSync("");showLock("entrar")})}
 function armIdle(){clearTimeout(lockT);if(KEY)lockT=setTimeout(lockNow,IDLE)}
 ["pointerdown","keydown","scroll"].forEach(function(e){document.addEventListener(e,armIdle,{passive:true})});
 $("lkb").onclick=lockNow;
@@ -246,7 +245,7 @@ function api(b){return fetch(CFG.url,{method:"POST",headers:{"Content-Type":"tex
 function push(force){if(!KEY||!CFG.url||!CFG.tok||CONF)return;if(busy){again=true;return}busy=true;
  api({op:"save",baseV:rv,json:lastJson,force:force===true}).then(function(r){if(!KEY)return;
   if(r.ok){rv=r.v;dirty=false;meta();setSync("salvo "+stamp())}
-  else if(r.conflict){CONF=r;$("cf").hidden=false;window.scrollTo(0,0);setSync("aguardando sua escolha")}
+  else if(r.conflict){CONF=r;useRemote();toast("Dados atualizados com os da planilha")}
   else{setSync("erro na planilha");toast("Planilha: "+(r.error||"sem resposta"))}
  }).catch(function(){setSync("offline: envio pendente")}).then(function(){busy=false;if(again){again=false;push()}})}
 function pull(){if(!KEY||!CFG.url||!CFG.tok||dirty||busy||CONF)return;busy=true;
@@ -256,9 +255,7 @@ function pull(){if(!KEY||!CFG.url||!CFG.tok||dirty||busy||CONF)return;busy=true;
   if(r.v>rv&&r.json){try{var o=JSON.parse(r.json);if(o&&o.a){S=o;rv=r.v;lastJson=r.json;dirty=false;meta();persistQ();render()}}catch(e){}}
   setSync("sincronizado "+stamp())
  }).catch(function(){setSync("sem conexão")}).then(function(){busy=false})}
-function useRemote(){try{S=JSON.parse(CONF.json);rv=CONF.v;lastJson=CONF.json;dirty=false;meta();persistQ()}catch(e){}CONF=null;$("cf").hidden=true;setSync("sincronizado "+stamp());render()}
-function keepLocal(){rv=CONF.v;CONF=null;$("cf").hidden=true;meta();push(true)}
-$("cf1").onclick=useRemote;$("cf2").onclick=keepLocal;
+function useRemote(){try{S=JSON.parse(CONF.json);rv=CONF.v;lastJson=CONF.json;dirty=false;meta();persistQ()}catch(e){}CONF=null;setSync("sincronizado "+stamp());render()}
 function resync(){if(KEY&&CFG.url&&CFG.tok){if(dirty)push();else pull()}}
 document.addEventListener("visibilitychange",function(){
  if(document.hidden){hiddenAt=Date.now();return}
@@ -276,7 +273,7 @@ $("bk").onclick=function(){openM('<h2>Ajustes</h2><h3>Planilha do Google</h3><p 
  '<h3>Backup em arquivo</h3><div class="bar"><button class="btn p" id="bd" type="button">Baixar backup</button><button class="btn" id="bc" type="button">Baixar clientes (CSV)</button></div><label for="bf">Restaurar de arquivo .json</label><input type="file" id="bf" accept=".json,application/json">'+
  '<h3>Aparência</h3><div class="seg" id="thm">'+themeBtns()+'</div><h3>Segurança</h3><p class="mu">O app bloqueia sozinho depois de 5 minutos fora da tela ou 10 minutos parado.</p><label for="np1">Nova senha do app</label><input id="np1" type="password" autocomplete="new-password"><label for="np2">Repita a nova senha</label><input id="np2" type="password" autocomplete="new-password"><div class="bar"><button class="btn" type="button" onclick="changePw()">Alterar senha do app</button><button class="btn" type="button" onclick="closeM();lockNow()">Bloquear agora</button></div><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
  $("sc").onclick=function(){var u=$("su").value.trim();if(u.indexOf("https://script.google.com/")!=0){toast("O endereço deve começar com https://script.google.com/");return}if(!$("st").value){toast("Informe a senha da planilha");return}
-  CFG.url=u;CFG.tok=$("st").value;lsSet("agm_cfg",JSON.stringify({url:CFG.url}));CONF=null;$("cf").hidden=true;
+  CFG.url=u;CFG.tok=$("st").value;lsSet("agm_cfg",JSON.stringify({url:CFG.url}));CONF=null;
   dirty=(S.c.length+S.a.length+S.f.length)>0;meta();persistQ();setSync("conectando…");closeM();if(dirty)push();else pull();toast("Conectando à planilha…")};
  $("sy").onclick=function(){if(!CFG.tok){toast("Informe a senha da planilha primeiro");return}if(dirty)push();else pull();toast("Sincronizando…")};
  $("bd").onclick=function(){dl("agenda-manicure-"+iso(new Date())+".json",JSON.stringify(S))};
