@@ -120,26 +120,28 @@ function openM(h){$("sheet").innerHTML=h;$("modal").hidden=false}
 function closeM(){$("modal").hidden=true;$("sheet").innerHTML=""}
 $("modal").addEventListener("mousedown",function(e){if(e.target===this)closeM()});
 /* ---- salvar: navegador + planilha do Google ---- */
+var URL_PADRAO="https://script.google.com/macros/s/AKfycbwhVUR0P2bMvSFzLY5LOFdaWM3uwMWqrAoV9ejx_7VlCuo3eEMswhDiSUzFJ0yxd3ewoQ/exec";
 var CFG={url:"",tok:""},rv=0,dirty=false,saveT=null,busy=false,again=false,lastJson="",CONF=null;
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function load(){var r=lsGet("agm2");if(r){try{var o=JSON.parse(r);if(o&&o.a)S=o}catch(e){}}
  try{var c=JSON.parse(lsGet("agm_cfg")||"{}");CFG.url=c.url||"";CFG.tok=c.tok||""}catch(e){}
+ if(!CFG.url)CFG.url=URL_PADRAO;
  try{var m=JSON.parse(lsGet("agm_meta")||"{}");rv=m.rv||0;dirty=!!m.dirty}catch(e){}
  lastJson=JSON.stringify(S)}
 function meta(){lsSet("agm_meta",JSON.stringify({rv:rv,dirty:dirty}))}
 function setSync(t){$("sync").textContent=t}
 function stamp(){return new Date().toTimeString().slice(0,5)}
 function save(){lastJson=JSON.stringify(S);lsSet("agm2",lastJson);dirty=true;meta();
- if(CFG.url){setSync("salvando…");clearTimeout(saveT);saveT=setTimeout(function(){push()},800)}else setSync("só neste aparelho")}
+ if(CFG.url&&CFG.tok){setSync("salvando…");clearTimeout(saveT);saveT=setTimeout(function(){push()},800)}else setSync(CFG.url?"falta a senha":"só neste aparelho")}
 function api(b){return fetch(CFG.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({tok:CFG.tok},b))}).then(function(r){return r.json()})}
-function push(force){if(!CFG.url||CONF)return;if(busy){again=true;return}busy=true;
+function push(force){if(!CFG.url||!CFG.tok||CONF)return;if(busy){again=true;return}busy=true;
  api({op:"save",baseV:rv,json:lastJson,force:force===true}).then(function(r){
   if(r.ok){rv=r.v;dirty=false;meta();setSync("salvo na planilha às "+stamp())}
   else if(r.conflict){CONF=r;$("cf").hidden=false;window.scrollTo(0,0);setSync("aguardando sua escolha")}
   else setSync("erro: "+(r.error||"sem resposta"))
  }).catch(function(){setSync("sem conexão (será reenviado)")}).then(function(){busy=false;if(again){again=false;push()}})}
-function pull(){if(!CFG.url||dirty||busy||CONF)return;busy=true;
+function pull(){if(!CFG.url||!CFG.tok||dirty||busy||CONF)return;busy=true;
  api({op:"load"}).then(function(r){
   if(!r.ok){setSync("erro: "+(r.error||""));return}
   if(r.v==0){dirty=true;meta();busy=false;push();return}
@@ -152,10 +154,10 @@ $("cf1").onclick=useRemote;$("cf2").onclick=keepLocal;
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&CFG.url){if(dirty)push();else pull()}});
 window.addEventListener("online",function(){if(CFG.url){if(dirty)push();else pull()}});
 /* ---- planilha e backup ---- */
-$("bk").onclick=function(){openM('<h2>Planilha e backup</h2><p class="mu">Os dados ficam neste aparelho e, com a planilha conectada, também no Google Sheets.</p><label for="su">Endereço do Apps Script (termina em /exec)</label><input id="su" value="'+esc(CFG.url)+'" placeholder="https://script.google.com/macros/s/…/exec"><label for="st">Senha</label><input id="st" type="password" value="'+esc(CFG.tok)+'"><div class="bar"><button class="btn p" id="sc" type="button">Salvar e conectar</button><button class="btn" id="sy" type="button">Sincronizar agora</button></div><h2 style="margin-top:14px">Backup em arquivo</h2><div class="bar"><button class="btn p" id="bd" type="button">Baixar backup</button><button class="btn" id="bc" type="button">Baixar clientes (CSV)</button></div><label for="bf">Restaurar de arquivo .json</label><input type="file" id="bf" accept=".json,application/json"><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
+$("bk").onclick=function(){openM('<h2>Planilha e backup</h2><p class="mu">Os dados ficam neste aparelho e, com a planilha conectada, também no Google Sheets.</p><label for="su">Endereço do Apps Script (já configurado)</label><input id="su" value="'+esc(CFG.url)+'" placeholder="https://script.google.com/macros/s/…/exec"><label for="st">Senha</label><input id="st" type="password" value="'+esc(CFG.tok)+'"><div class="bar"><button class="btn p" id="sc" type="button">Salvar e conectar</button><button class="btn" id="sy" type="button">Sincronizar agora</button></div><h2 style="margin-top:14px">Backup em arquivo</h2><div class="bar"><button class="btn p" id="bd" type="button">Baixar backup</button><button class="btn" id="bc" type="button">Baixar clientes (CSV)</button></div><label for="bf">Restaurar de arquivo .json</label><input type="file" id="bf" accept=".json,application/json"><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
  $("sc").onclick=function(){var u=$("su").value.trim();if(u.indexOf("https://script.google.com/")!=0){toast("O endereço deve começar com https://script.google.com/");return}
-  CFG.url=u;CFG.tok=$("st").value;lsSet("agm_cfg",JSON.stringify(CFG));dirty=true;meta();CONF=null;$("cf").hidden=true;setSync("conectando…");closeM();push();toast("Conectando à planilha…")};
- $("sy").onclick=function(){if(!CFG.url){toast("Conecte a planilha primeiro");return}if(dirty)push();else pull();toast("Sincronizando…")};
+  if(!$("st").value){toast("Informe a senha");return}CFG.url=u;CFG.tok=$("st").value;lsSet("agm_cfg",JSON.stringify(CFG));dirty=true;meta();CONF=null;$("cf").hidden=true;setSync("conectando…");closeM();push();toast("Conectando à planilha…")};
+ $("sy").onclick=function(){if(!CFG.tok){toast("Informe a senha primeiro");return}if(dirty)push();else pull();toast("Sincronizando…")};
  $("bd").onclick=function(){dl("agenda-manicure-"+iso(new Date())+".json",JSON.stringify(S))};
  $("bc").onclick=function(){var r=["Nome;Apelido;Telefone;Nascimento;Observações"].concat(S.c.map(function(c){return [c.n,c.ap,c.w,c.nasc,c.ob].map(function(x){return '"'+String(x||"").replace(/"/g,'""')+'"'}).join(";")}));dl("clientes.csv","﻿"+r.join("\n"))};
  $("bf").onchange=function(){var f=this.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var o=JSON.parse(rd.result);if(!o||!o.a||!o.c||!o.s)throw 1;S=o;save();closeM();render();toast("Backup restaurado")}catch(e){toast("Arquivo inválido")}};rd.readAsText(f)}};
@@ -283,7 +285,7 @@ function delFin(id){var f=S.f.find(function(x){return x.id==id});if(f&&f.ap){var
 var T=[["agenda","Agenda"],["clientes","Clientes"],["servicos","Serviços"],["fin","Financeiro"]];
 function render(){$("tabs").innerHTML=T.map(function(t){return '<button type="button" class="'+(tab==t[0]?"on":"")+'" onclick="if(tab!=\''+t[0]+'\'){q=\'\';sf=[]}tab=\''+t[0]+'\';render()">'+t[1]+'</button>'}).join("");
  var y=window.scrollY;$("v").innerHTML=tab=="agenda"?agendaV():tab=="clientes"?clientsV():tab=="servicos"?servicesV():finV();window.scrollTo(0,y)}
-load();render();if(CFG.url){if(dirty)push();else pull()}else setSync("só neste aparelho");
+load();render();if(CFG.url&&CFG.tok){if(dirty)push();else pull()}else if(CFG.url){setSync("falta a senha");$("bk").click()}else setSync("só neste aparelho");
 </script>
 
 </body>
