@@ -138,6 +138,19 @@ body.locked #app{display:none}
 .ev.cancelled{background:var(--card);border-color:var(--bd);color:inherit}
 .ev[style*="s-blk"]{background:var(--card);border-color:var(--bd);color:inherit}
 .ev[style*="s-blk"] .mu{color:var(--mu,inherit)}
+/* linha do tempo: o bloco ocupa a duração real */
+.tl{position:relative;margin-top:4px}
+.tl .slot{position:absolute;left:0;right:0;display:block;min-height:0;padding:0;box-sizing:border-box}
+.tl .slot .hh{position:absolute;left:0;top:3px}
+.tl .slot::after{content:"";position:absolute;left:56px;right:0;top:50%;border-top:1px dashed var(--bd);opacity:.5}
+.tl .ev{position:absolute;box-sizing:border-box;overflow:hidden;margin:0;z-index:2}
+.tl .ev .row{align-items:flex-start}
+.tl .ev .row b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl .ev.tight{padding-top:4px;padding-bottom:4px}
+.tl .ev.tight .mu{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nowl{position:absolute;left:48px;right:0;height:2px;background:var(--ac);z-index:3;pointer-events:none}
+.nowl::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--ac)}
+.tl .ev.nar .pill{display:none}.tl .ev.nar .row b{white-space:normal}
 </style>
 
 </head>
@@ -310,10 +323,10 @@ function dayEvs(dt){return S.a.filter(function(a){if(a.dt!=dt)return false;
  if(sf.length&&sf.indexOf(a.st)<0)return false;
  if(q){var c=cl(a.c),t=((c?c.n+" "+(c.ap||""):"")+" "+a.sv.map(function(i){var s=sv(i);return s?s.n:""}).join(" ")).toLowerCase();if(t.indexOf(q.toLowerCase())<0)return false}
  return true}).sort(function(x,y){return x.h<y.h?-1:x.h>y.h?1:0})}
-function evH(a){
- if(a.blk)return '<div class="ev" style="--c:var(--s-blk)" onclick="openBlk(\''+a.id+'\')"><b>'+a.h+' · Bloqueado</b> <span class="mu">'+esc(a.nt||"")+' · '+a.dur+' min</span></div>';
+function evH(a,x){x=x||"";var tg=x&&+a.dur<=30?" tight":"";if(/\/ [2-9] - 4px/.test(x))tg+=" nar";
+ if(a.blk)return '<div class="ev'+tg+'" style="--c:var(--s-blk);'+x+'" onclick="openBlk(\''+a.id+'\')"><b>'+a.h+' · Bloqueado</b> <span class="mu">'+esc(a.nt||"")+' · '+a.dur+' min</span></div>';
  var c=cl(a.c),i=ST.indexOf(a.st),n=a.sv.map(function(x){var s=sv(x);return s?s.n:"?"}).join(" + ");
- return '<div class="ev'+(a.st=="Cancelado"?" cancelled":"")+'" style="--c:var(--s-'+SC[i]+')" onclick="openAp(\''+a.id+'\')"><div class="row"><b>'+a.h+' · '+esc(c?c.n:"Cliente removida")+'</b><span class="pill" style="--c:var(--s-'+SC[i]+')">'+a.st+'</span></div><div class="mu">'+esc(n)+' · '+a.dur+' min · '+brl(a.p)+'</div></div>'}
+ return '<div class="ev'+(a.st=="Cancelado"?" cancelled":"")+tg+'" style="--c:var(--s-'+SC[i]+');'+x+'" onclick="openAp(\''+a.id+'\')"><div class="row"><b>'+a.h+' · '+esc(c?c.n:"Cliente removida")+'</b><span class="pill" style="--c:var(--s-'+SC[i]+')">'+a.st+'</span></div><div class="mu">'+esc(n)+' · '+a.dur+' min · '+brl(a.p)+'</div></div>'}
 function nav(n){if(view=="1d")day=addD(day,n);else if(view=="7d")day=addD(day,7*n);else{var d=pd(day);d.setMonth(d.getMonth()+n,1);day=iso(d)}render()}
 function agendaV(){
  var d=pd(day),lab=view=="mes"?MES[d.getMonth()]+" "+d.getFullYear():DOW[d.getDay()]+", "+d.getDate()+" "+MES[d.getMonth()].slice(0,3)+" "+d.getFullYear();
@@ -325,12 +338,17 @@ function agendaV(){
 function togSf(s){var i=sf.indexOf(s);if(i>=0)sf.splice(i,1);else sf.push(s);render()}
 function dayH(){var es=dayEvs(day),now=new Date(),nm=now.getHours()*60+now.getMinutes(),isT=day==iso(now),h="";
  if(!es.length)h+='<div class="empty">Nenhum horário neste dia.<br><button class="btn p" style="margin-top:8px" type="button" onclick="newAp()">Agendar agora</button></div>';
- var by={};es.forEach(function(a){var k=Math.min(37,Math.max(0,Math.floor((tm(a.h)-300)/30)));(by[k]=by[k]||[]).push(a)});
- var tot=es.filter(function(a){return !a.blk&&a.st!="Cancelado"}).length;
+  var tot=es.filter(function(a){return !a.blk&&a.st!="Cancelado"}).length;
  var rev=es.filter(function(a){return !a.blk&&a.st!="Cancelado"}).reduce(function(s,a){return s+a.p},0);
  h='<div class="g4"><div class="kpi"><b>'+tot+'</b><span>atendimentos no dia</span></div><div class="kpi"><b>'+brl(rev)+'</b><span>previsto no dia</span></div></div>'+h;
- var ks=Object.keys(by).map(Number),tk=ks.length?Math.min.apply(null,ks):(isT?Math.max(0,Math.min(37,Math.floor((nm-300)/30)-1)):4);
- for(var k=0;k<38;k++){var m=300+k*30,cur=isT&&nm>=m&&nm<m+30;h+='<div class="slot'+(cur?" now":"")+(k==tk?" go":"")+'"><div class="hh">'+hm(m)+'</div><div>'+(by[k]||[]).map(evH).join("")+'</div></div>'}
+ var H=56,N=38,items=es.map(function(a){var s=Math.max(300,Math.min(300+N*30-15,tm(a.h))),e=Math.min(300+N*30,s+Math.max(15,+a.dur||60));return {a:a,s:s,e:e}}),cl_=[],cur_=null;
+ items.forEach(function(it){if(!cur_||it.s>=cur_.end){cur_={end:it.e,cols:[],its:[]};cl_.push(cur_)}var c=0;while(cur_.cols[c]!==undefined&&cur_.cols[c]>it.s)c++;cur_.cols[c]=it.e;it.c=c;cur_.its.push(it);if(it.e>cur_.end)cur_.end=it.e});
+ var tk=items.length?Math.floor((Math.min.apply(null,items.map(function(t){return t.s}))-300)/30):(isT?Math.max(0,Math.min(N-1,Math.floor((nm-300)/30)-1)):4),g='<div class="tl" style="height:'+N*H+'px">';
+ for(var k=0;k<N;k++)g+='<div class="slot'+(k==tk?" go":"")+'" style="top:'+k*H+'px;height:'+H+'px"><div class="hh">'+hm(300+k*30)+'</div></div>';
+ cl_.forEach(function(c){var n=c.cols.length;c.its.forEach(function(it){var top=(it.s-300)/30*H+1,hh=Math.max(H*0.5,(it.e-it.s)/30*H-3);
+  g+=evH(it.a,'top:'+top+'px;height:'+hh+'px;left:calc(56px + (100% - 56px) * '+it.c+' / '+n+');width:calc((100% - 56px) / '+n+' - 4px)')})});
+ if(isT&&nm>=300&&nm<300+N*30)g+='<div class="nowl" style="top:'+(nm-300)/30*H+'px"></div>';
+ h+=g+'</div>';
  return h}
 function weekH(){var d=pd(day),st=addD(day,-d.getDay()),h='<div class="week">';
  for(var i=0;i<7;i++){var x=addD(st,i),dd=pd(x);h+='<div class="wd'+(x==iso(new Date())?" today":"")+'"><h3>'+DOW[i]+" "+dd.getDate()+'</h3>'+(dayEvs(x).map(evH).join("")||'<div class="mu">—</div>')+'<button class="btn sm" type="button" onclick="day=\''+x+'\';newAp()">+</button></div>'}
