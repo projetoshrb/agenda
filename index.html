@@ -76,6 +76,7 @@ label{font-size:12px;color:var(--mu);font-weight:500}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:9px;font-size:14px;z-index:90}
 .toast[hidden]{display:none}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(20px);opacity:.6}}}
+.ac{position:relative}.acl{position:absolute;left:0;right:0;top:100%;margin-top:-6px;z-index:5;background:var(--card);border:1px solid var(--bd);border-radius:9px;max-height:210px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.18)}.acl[hidden]{display:none}.acl button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px;cursor:pointer;border-bottom:1px solid var(--bd)}.acl button:hover,.acl button:focus-visible{background:var(--ac2)}
 .banner{border-color:var(--wa)}.banner[hidden]{display:none}</style>
 
 </head>
@@ -197,16 +198,24 @@ function monthH(){var d=pd(day),y=d.getFullYear(),m=d.getMonth(),f=new Date(y,m,
  for(var k=1;k<=n;k++){var x=y+"-"+(m+1<10?"0":"")+(m+1)+"-"+(k<10?"0":"")+k,c=S.a.filter(function(a){return a.dt==x&&!a.blk&&a.st!="Cancelado"}).length;h+='<button type="button" class="'+(x==day?"sel":"")+'" onclick="day=\''+x+'\';render()">'+k+(c?'<small>'+c+'</small>':"")+'</button>'}
  h+='</div><h2 style="margin-top:14px">'+br(day)+'</h2>';var es=dayEvs(day);return h+(es.map(evH).join("")||'<div class="empty">Nenhum horário neste dia.</div>')}
 /* ---- modal de agendamento ---- */
+/* ---- busca de cliente ---- */
+function cname(){var c=cl(D.c);return c?c.n+(c.ap?" ("+c.ap+")":""):""}
+function cm(q){q=norm(q);var l=S.c.slice().sort(function(a,b){return a.n.localeCompare(b.n)});if(!q)return l;var a=[],b=[];l.forEach(function(c){var n=norm(c.n),ap=norm(c.ap||"");if(n.indexOf(q)==0||ap.indexOf(q)==0)a.push(c);else if(n.indexOf(q)>=0||ap.indexOf(q)>=0||norm(c.w).indexOf(q)>=0)b.push(c)});return a.concat(b)}
+function acIn(){var v=$("acs").value,cur=cl($("ac").value);if(cur&&v!==cur.n+(cur.ap?" ("+cur.ap+")":""))$("ac").value="";var l=cm(v),box=$("acl");
+ box.innerHTML=l.length?l.map(function(c){return '<button type="button" onmousedown="pickC(\''+c.id+'\')">'+esc(c.n)+(c.ap?' <span class="mu">('+esc(c.ap)+')</span>':"")+(c.w?' <span class="mu">· '+esc(c.w)+'</span>':"")+'</button>'}).join(""):'<div class="mu" style="padding:9px 10px">'+(S.c.length?"Nenhuma cliente encontrada. Use + Nova.":"Nenhuma cliente cadastrada. Use + Nova.")+'</div>';box.hidden=false}
+function acOut(){setTimeout(function(){var b=$("acl");if(b)b.hidden=true},150)}
+function pickC(id){var c=cl(id);$("ac").value=id;$("acs").value=c.n+(c.ap?" ("+c.ap+")":"");$("acl").hidden=true}
+
 var D=null;
 function nextFree(dt){var es=S.a.filter(function(a){return a.dt==dt}),t=dt==iso(new Date())?Math.ceil((new Date().getHours()*60+new Date().getMinutes())/30)*30:540;t=Math.max(t,420);
  while(t<1260&&es.some(function(a){return tm(a.h)<=t&&t<tm(a.h)+a.dur}))t+=30;return hm(Math.min(t,1260))}
-function newAp(){D={id:"",c:S.c.length?S.c[0].id:"",sv:[],dt:day,h:nextFree(day),dur:60,p:0,st:"Confirmado",nt:"",lem:"",rec:false,freq:"w",lim:addD(day,28),fp:"PIX"};apM()}
+function newAp(){D={id:"",c:"",sv:[],dt:day,h:nextFree(day),dur:60,p:0,st:"Confirmado",nt:"",lem:"",rec:false,freq:"w",lim:addD(day,28),fp:"PIX"};apM()}
 function openAp(id){var a=ap(id);if(!a)return;D=JSON.parse(JSON.stringify(a));D.lem=a.lem||"";D.fp=a.fp||"PIX";D.rec=false;apM()}
-function coll(){if(!$("ac"))return;D.c=$("ac").value;D.dt=$("ad").value;D.h=$("ah").value;D.dur=+$("adu").value||30;D.p=+$("ap").value||0;D.nt=$("an").value;D.lem=$("al").value;
+function coll(){if(!$("ac"))return;D.c=$("ac").value;if(!D.c&&$("acs")&&$("acs").value.trim()){var mm=cm($("acs").value);if(mm.length==1)D.c=mm[0].id}D.dt=$("ad").value;D.h=$("ah").value;D.dur=+$("adu").value||30;D.p=+$("ap").value||0;D.nt=$("an").value;D.lem=$("al").value;
  if($("ast"))D.st=$("ast").value;if($("afp"))D.fp=$("afp").value;if($("arec")){D.rec=$("arec").checked;if($("af")){D.freq=$("af").value;D.lim=$("alim").value}}}
 function togSv(id){coll();var i=D.sv.indexOf(id);if(i>=0)D.sv.splice(i,1);else D.sv.push(id);D.dur=D.sv.reduce(function(s,x){var o=sv(x);return s+(o?o.d:0)},0)||60;D.p=D.sv.reduce(function(s,x){var o=sv(x);return s+(o?o.p:0)},0);apM()}
 function apM(){var ed=!!D.id;
- var h='<h2>'+(ed?"Agendamento":"Novo agendamento")+'</h2><label for="ac">Cliente</label><div class="row" style="align-items:flex-start"><select id="ac" style="flex:1">'+(S.c.length?S.c.map(function(c){return '<option value="'+c.id+'"'+(c.id==D.c?" selected":"")+'>'+esc(c.n)+(c.ap?" ("+esc(c.ap)+")":"")+'</option>'}).join(""):'<option value="">Nenhuma cliente cadastrada</option>')+'</select><button class="btn" style="margin-top:3px" type="button" onclick="coll();cliM(null,true)">+ Nova</button></div>';
+ var h='<h2>'+(ed?"Agendamento":"Novo agendamento")+'</h2><label for="acs">Cliente</label><div class="row" style="align-items:flex-start"><div class="ac" style="flex:1"><input id="acs" autocomplete="off" placeholder="Digite o nome ou a inicial" value="'+esc(cname())+'" oninput="acIn()" onfocus="acIn()" onblur="acOut()"><input type="hidden" id="ac" value="'+esc(D.c)+'"><div class="acl" id="acl" hidden></div></div><button class="btn" style="margin-top:3px" type="button" onclick="coll();cliM(null,true)">+ Nova</button></div>';
  h+='<label>Serviços</label><div class="chips">'+S.s.map(function(s){return '<button type="button" class="chip'+(D.sv.indexOf(s.id)>=0?" on":"")+'" onclick="togSv(\''+s.id+'\')">'+esc(s.n)+' · '+brl(s.p)+'</button>'}).join("")+'</div>';
  h+='<div class="g2"><div><label for="ad">Data</label><input type="date" id="ad" value="'+D.dt+'"></div><div><label for="ah">Horário</label><input type="time" id="ah" step="900" value="'+D.h+'"></div><div><label for="adu">Duração (min)</label><input type="number" id="adu" min="15" step="15" value="'+D.dur+'"></div><div><label for="ap">Valor (R$)</label><input type="number" id="ap" min="0" step="0.01" value="'+D.p+'"></div></div>';
  h+='<label for="an">Anotações do serviço</label><textarea id="an" rows="2">'+esc(D.nt)+'</textarea><label for="al">Lembrete de WhatsApp (horas antes; vazio usa o padrão de '+S.cfg.lem+' h)</label><input type="number" id="al" min="0" value="'+esc(D.lem)+'">';
