@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agenda Manicure</title>
-<meta name="theme-color" content="#a3294f" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1b1518" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" id="tc" content="#faf6f6">
+<script>try{var _t=localStorage.getItem("agm_theme")||"light",_r=document.documentElement;if(_t=="auto")_r.removeAttribute("data-theme");else _r.setAttribute("data-theme",_t=="dark"?"dark":"light");if(_t=="dark"||(_t=="auto"&&matchMedia("(prefers-color-scheme: dark)").matches))document.getElementById("tc")||0}catch(e){document.documentElement.setAttribute("data-theme","light")}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -86,7 +86,7 @@ label{font-size:12px;color:var(--mu);font-weight:500}
 .ac{position:relative}.acl{position:absolute;left:0;right:0;top:100%;margin-top:-6px;z-index:5;background:var(--card);border:1px solid var(--bd);border-radius:9px;max-height:210px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.18)}.acl[hidden]{display:none}.acl button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px;cursor:pointer;border-bottom:1px solid var(--bd)}.acl button:hover,.acl button:focus-visible{background:var(--ac2)}
 .banner{border-color:var(--wa)}.banner[hidden]{display:none}.acl{box-shadow:0 6px 18px rgba(0,0,0,.18)}
 /* ---- app: cabeçalho, barra de abas, botão flutuante, bloqueio ---- */
-:root{--onac:#fff}
+:root{--onac:#fff;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onac:#2a1020}}
 :root[data-theme="dark"]{--onac:#2a1020}
 button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -265,10 +265,16 @@ document.addEventListener("visibilitychange",function(){
  if(KEY&&hiddenAt&&Date.now()-hiddenAt>AWAY){lockNow();return}
  resync()});
 window.addEventListener("online",resync);
+/* ---- tema: claro (padrão), escuro ou automático ---- */
+function curTheme(){return lsGet("agm_theme")||"light"}
+function themeBtns(){return [["light","Claro"],["dark","Escuro"],["auto","Automático"]].map(function(x){return '<button type="button" data-t="'+x[0]+'" class="'+(curTheme()==x[0]?"on":"")+'" onclick="setTheme(\''+x[0]+'\')">'+x[1]+'</button>'}).join("")}
+function setTheme(t){lsSet("agm_theme",t);var r=document.documentElement;if(t=="auto")r.removeAttribute("data-theme");else r.setAttribute("data-theme",t=="dark"?"dark":"light");
+ var dk=t=="dark"||(t=="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches),m=$("tc");if(m)m.setAttribute("content",dk?"#1b1518":"#faf6f6");
+ Array.prototype.forEach.call(document.querySelectorAll("#thm button"),function(x){x.classList.toggle("on",x.getAttribute("data-t")==t)})}
 /* ---- ajustes: planilha, backup e segurança ---- */
 $("bk").onclick=function(){openM('<h2>Ajustes</h2><h3>Planilha do Google</h3><p class="mu">Os dados ficam neste aparelho e, com a planilha conectada, também no Google Sheets.</p><label for="su">Endereço do Apps Script</label><input id="su" value="'+esc(CFG.url)+'"><label for="st">Senha da planilha</label><input id="st" type="password" autocomplete="off" value="'+esc(CFG.tok)+'"><div class="bar"><button class="btn p" id="sc" type="button">Salvar e conectar</button><button class="btn" id="sy" type="button">Sincronizar agora</button></div>'+
  '<h3>Backup em arquivo</h3><div class="bar"><button class="btn p" id="bd" type="button">Baixar backup</button><button class="btn" id="bc" type="button">Baixar clientes (CSV)</button></div><label for="bf">Restaurar de arquivo .json</label><input type="file" id="bf" accept=".json,application/json">'+
- '<h3>Segurança</h3><p class="mu">O app bloqueia sozinho depois de 5 minutos fora da tela ou 10 minutos parado.</p><label for="np1">Nova senha do app</label><input id="np1" type="password" autocomplete="new-password"><label for="np2">Repita a nova senha</label><input id="np2" type="password" autocomplete="new-password"><div class="bar"><button class="btn" type="button" onclick="changePw()">Alterar senha do app</button><button class="btn" type="button" onclick="closeM();lockNow()">Bloquear agora</button></div><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
+ '<h3>Aparência</h3><div class="seg" id="thm">'+themeBtns()+'</div><h3>Segurança</h3><p class="mu">O app bloqueia sozinho depois de 5 minutos fora da tela ou 10 minutos parado.</p><label for="np1">Nova senha do app</label><input id="np1" type="password" autocomplete="new-password"><label for="np2">Repita a nova senha</label><input id="np2" type="password" autocomplete="new-password"><div class="bar"><button class="btn" type="button" onclick="changePw()">Alterar senha do app</button><button class="btn" type="button" onclick="closeM();lockNow()">Bloquear agora</button></div><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
  $("sc").onclick=function(){var u=$("su").value.trim();if(u.indexOf("https://script.google.com/")!=0){toast("O endereço deve começar com https://script.google.com/");return}if(!$("st").value){toast("Informe a senha da planilha");return}
   CFG.url=u;CFG.tok=$("st").value;lsSet("agm_cfg",JSON.stringify({url:CFG.url}));CONF=null;$("cf").hidden=true;
   dirty=(S.c.length+S.a.length+S.f.length)>0;meta();persistQ();setSync("conectando…");closeM();if(dirty)push();else pull();toast("Conectando à planilha…")};
@@ -279,6 +285,7 @@ $("bk").onclick=function(){openM('<h2>Ajustes</h2><h3>Planilha do Google</h3><p 
 function dl(name,data){var a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type:"application/octet-stream"}));a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove()},500)}
 /* ---- início ---- */
 function boot(){
+ setTheme(curTheme());
  if(!window.crypto||!crypto.subtle){$("lock").hidden=false;document.body.classList.add("locked");$("lk-t").textContent="Navegador sem criptografia";$("lk-m").textContent="Abra a agenda pelo endereço https do site para continuar.";$("lkf").hidden=true;return}
  var c={};try{c=JSON.parse(lsGet("agm_cfg")||"{}")}catch(e){}
  CFG.url=c.url||URL_PADRAO;
