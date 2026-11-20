@@ -145,7 +145,7 @@ body.locked #app{display:none}
 .tl .slot::after{content:"";position:absolute;left:56px;right:0;top:50%;border-top:1px dashed var(--bd);opacity:.5}
 .tl .ev{position:absolute;box-sizing:border-box;overflow:hidden;margin:0;z-index:2}
 .tl .ev .row{align-items:flex-start}
-.tl .ev .row b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl .ev .row b{min-width:0;overflow:hidden;white-space:normal}
 .tl .ev.tight{padding-top:4px;padding-bottom:4px}
 .tl .ev.tight .mu{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nowl{position:absolute;left:48px;right:0;height:2px;background:var(--ac);z-index:3;pointer-events:none}
@@ -161,6 +161,11 @@ body{overflow-x:clip;max-width:100%}
 a.btn{color:var(--fg);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}a.btn.p{color:var(--onac)}
 .tl .slot{cursor:pointer;-webkit-tap-highlight-color:rgba(163,41,79,.14)}.tl .slot:active{background:rgba(163,41,79,.10)}
 .dnav{position:sticky;top:var(--hh,60px);z-index:14;background:var(--bg);padding:6px 0;margin:0 0 4px}
+
+.ev .ph{font-weight:400;font-size:.85em;color:var(--evfg);opacity:.55;margin-left:2px}
+.ev .ph{display:inline-block;white-space:nowrap}
+.tl .ev.tight .ph,.tl .ev.nar .ph{display:none}
+.ev .ph{font-size:.75em}
 </style>
 
 </head>
@@ -351,7 +356,7 @@ function dayEvs(dt){return S.a.filter(function(a){if(a.dt!=dt)return false;
 function evH(a,x){x=x||"";var tg=x&&+a.dur<=30?" tight":"";if(/\/ [2-9] - 4px/.test(x))tg+=" nar";
  if(a.blk)return '<div class="ev'+tg+'" style="--c:var(--s-blk);'+x+'" onclick="openBlk(\''+a.id+'\')"><b>'+a.h+' · Bloqueado</b> <span class="mu">'+esc(a.nt||"")+' · '+a.dur+' min</span></div>';
  var c=cl(a.c),i=ST.indexOf(a.st),n=a.sv.map(function(x){var s=sv(x);return s?s.n:"?"}).join(" + ");
- return '<div class="ev'+(a.st=="Cancelado"?" cancelled":"")+tg+'" style="--c:var(--s-'+SC[i]+');'+x+'" onclick="openAp(\''+a.id+'\')"><div class="row"><b>'+a.h+' · '+esc(c?c.n:"Cliente removida")+'</b><span class="pill" style="--c:var(--s-'+SC[i]+')">'+a.st+'</span></div><div class="mu">'+esc(n)+' · '+a.dur+' min · '+brl(a.p)+'</div></div>'}
+ return '<div class="ev'+(a.st=="Cancelado"?" cancelled":"")+tg+'" style="--c:var(--s-'+SC[i]+');'+x+'" onclick="openAp(\''+a.id+'\')"><div class="row"><b>'+a.h+' · '+esc(c?c.n:"Cliente removida")+(c&&c.w?' <span class="ph">'+esc(c.w)+'</span>':'')+'</b><span class="pill" style="--c:var(--s-'+SC[i]+')">'+a.st+'</span></div><div class="mu">'+esc(n)+' · '+a.dur+' min · '+brl(a.p)+'</div></div>'}
 function nav(n){if(view=="1d")day=addD(day,n);else if(view=="7d")day=addD(day,7*n);else{var d=pd(day);d.setMonth(d.getMonth()+n,1);day=iso(d)}render()}
 function agendaV(){
  var d=pd(day),lab=view=="mes"?MES[d.getMonth()]+" "+d.getFullYear():DOW[d.getDay()]+", "+d.getDate()+" "+MES[d.getMonth()].slice(0,3)+" "+d.getFullYear();
