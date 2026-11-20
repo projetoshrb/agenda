@@ -228,7 +228,7 @@ function unb64(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.lengt
 function deriveKey(pw,salt,iter){return crypto.subtle.importKey("raw",TE.encode(pw),"PBKDF2",false,["deriveKey"]).then(function(k){return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:iter,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])})}
 function encJ(key,o){var iv=crypto.getRandomValues(new Uint8Array(12));return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,TE.encode(JSON.stringify(o))).then(function(c){return b64(iv)+"."+b64(c)})}
 function decJ(key,s){var p=s.split(".");return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(p[0])},key,unb64(p[1])).then(function(b){return JSON.parse(TD.decode(b))})}
-function persist(){if(!KEY||!VAULT)return Promise.resolve();return encJ(KEY,{S:S,tok:CFG.tok}).then(function(d){lsSet("agm_vault",JSON.stringify({v:1,salt:VAULT.salt,iter:VAULT.iter,d:d}))})}
+function persist(){if(!KEY||!VAULT)return Promise.resolve();return encJ(KEY,{S:S,tok:CFG.tok}).then(function(d){VAULT.d=d;lsSet("agm_vault",JSON.stringify({v:1,salt:VAULT.salt,iter:VAULT.iter,d:d}))})}
 function persistQ(){pq=pq.then(persist).catch(function(){});return pq}
 function meta(){lsSet("agm_meta",JSON.stringify({rv:rv,dirty:dirty}))}
 function setSync(t){$("sync").textContent=t}
@@ -425,16 +425,29 @@ function livreM(first){var cf={};try{cf=JSON.parse(lsGet("agm_livre")||"{}")}cat
  openM(h)}
 function livreCopy(){var t=window._lvmsg||"",ok=function(){toast("Mensagem copiada")},fb=function(){var x=$("lvm");x.focus();x.select();try{document.execCommand("copy");ok()}catch(e){toast("Selecione e copie o texto")}};
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,fb);else fb()}
+/* ---- fechamento automático do dia: fatura quando o último horário termina ---- */
+var AUTO=["Confirmado","No Salão","Em Andamento","Finalizado"];
+function fechaDia(){if(!S||!S.cfg||!S.a)return 0;var now=new Date(),hoje=iso(now),nm=now.getHours()*60+now.getMinutes(),ch=0,n=0;
+ if(!S.cfg.fech){S.cfg.fech=hoje;ch=1}
+ var dias={};S.a.forEach(function(a){if(a.blk||a.st=="Cancelado"||a.dt<S.cfg.fech||a.dt>hoje)return;var e=tm(a.h)+(+a.dur||60);if(!(a.dt in dias)||e>dias[a.dt])dias[a.dt]=e});
+ S.a.forEach(function(a){if(a.blk||a.nf||a.fid||AUTO.indexOf(a.st)<0||!(a.dt in dias))return;
+  if(a.dt==hoje&&nm<dias[a.dt])return;
+  a.st="Faturado";a.fp=a.fp||"PIX";n++;
+  if((+a.p||0)>0){var c=cl(a.c),f={id:uid(),tp:"R",v:a.p,desc:"Atendimento: "+(c?c.n:""),dt:a.dt,pg:a.dt,fp:a.fp,ap:a.id};S.f.push(f);a.fid=f.id}});
+ if(n)toast(n+" atendimento"+(n>1?"s":"")+" faturado"+(n>1?"s":"")+" automaticamente");
+ return n||ch}
+setInterval(function(){if(typeof KEY!=="undefined"&&KEY&&fechaDia()){save();render()}},60000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&typeof KEY!=="undefined"&&KEY&&fechaDia()){save();render()}});
 function newAp(h){D={id:"",c:"",sv:[],dt:day,h:h||nextFree(day),dur:60,p:0,st:"Confirmado",nt:"",lem:"",rec:false,freq:"w",lim:addD(day,365),fp:"PIX"};apM()}
 function openAp(id){var a=ap(id);if(!a)return;D=JSON.parse(JSON.stringify(a));D.lem=a.lem||"";D.fp=a.fp||"PIX";D.rec=false;apM()}
-function coll(){if(!$("ac"))return;D.c=$("ac").value;if(!D.c&&$("acs")&&$("acs").value.trim()){var mm=cm($("acs").value);if(mm.length==1)D.c=mm[0].id}D.dt=$("ad").value;D.h=$("ah").value;D.dur=+$("adu").value||30;D.p=+$("ap").value||0;D.nt=$("an").value;D.lem=$("al").value;
+function coll(){if(!$("ac"))return;D.c=$("ac").value;if(!D.c&&$("acs")&&$("acs").value.trim()){var mm=cm($("acs").value);if(mm.length==1)D.c=mm[0].id}D.dt=$("ad").value;D.h=$("ah").value;D.dur=+$("adu").value||30;D.p=+$("ap").value||0;D.nt=$("an").value;
  if($("ast"))D.st=$("ast").value;if($("afp"))D.fp=$("afp").value;if($("arec")){D.rec=$("arec").checked;if($("af")){D.freq=$("af").value;D.lim=$("alim").value}}}
 function togSv(id){coll();var i=D.sv.indexOf(id);if(i>=0)D.sv.splice(i,1);else D.sv.push(id);D.dur=D.sv.reduce(function(s,x){var o=sv(x);return s+(o?o.d:0)},0)||60;D.p=D.sv.reduce(function(s,x){var o=sv(x);return s+(o?o.p:0)},0);apM()}
 function apM(){var ed=!!D.id;
  var h='<h2>'+(ed?"Agendamento":"Novo agendamento")+'</h2><label for="acs">Cliente</label><div class="row" style="align-items:flex-start"><div class="ac" style="flex:1"><input id="acs" autocomplete="off" placeholder="Digite o nome ou a inicial" value="'+esc(cname())+'" oninput="acIn()" onfocus="acIn()" onblur="acOut()"><input type="hidden" id="ac" value="'+esc(D.c)+'"><div class="acl" id="acl" hidden></div></div><button class="btn" style="margin-top:3px" type="button" onclick="coll();cliM(null,true)">+ Nova</button></div>';
  h+='<label>Serviços</label><div class="chips">'+S.s.map(function(s){return '<button type="button" class="chip'+(D.sv.indexOf(s.id)>=0?" on":"")+'" onclick="togSv(\''+s.id+'\')">'+esc(s.n)+' · '+brl(s.p)+'</button>'}).join("")+'</div>';
  h+='<div class="g2"><div><label for="ad">Data</label><input type="date" id="ad" value="'+D.dt+'"></div><div><label for="ah">Horário</label><input type="time" id="ah" step="900" value="'+D.h+'"></div><div><label for="adu">Duração (min)</label><input type="number" id="adu" min="15" step="15" value="'+D.dur+'"></div><div><label for="ap">Valor (R$)</label><input type="number" id="ap" min="0" step="0.01" value="'+D.p+'"></div></div>';
- h+='<label for="an">Anotações do serviço</label><textarea id="an" rows="2">'+esc(D.nt)+'</textarea><label for="al">Lembrete de WhatsApp (horas antes; vazio usa o padrão de '+S.cfg.lem+' h)</label><input type="number" id="al" min="0" value="'+esc(D.lem)+'">';
+ h+='<label for="an">Anotações do serviço</label><textarea id="an" rows="2">'+esc(D.nt)+'</textarea>';
  if(ed){h+='<label for="ast">Status</label><select id="ast">'+ST.map(function(s){return '<option'+(s==D.st?" selected":"")+'>'+s+'</option>'}).join("")+'</select>';
   if(D.st=="Faturado")h+='<label for="afp">Forma de pagamento</label><select id="afp">'+FP.map(function(s){return '<option'+(s==D.fp?" selected":"")+'>'+s+'</option>'}).join("")+'</select>'}
  else h+='<label><input type="checkbox" id="arec" style="width:auto;margin:0 6px 0 0"'+(D.rec?" checked":"")+' onchange="coll();apM()">Recorrente</label>'+(D.rec?'<div class="g2"><div><label for="af">Repetir</label><select id="af"><option value="w"'+(D.freq=="w"?" selected":"")+'>Semanalmente</option><option value="q"'+(D.freq=="q"?" selected":"")+'>A cada 15 dias</option><option value="t"'+(D.freq=="t"?" selected":"")+'>A cada 30 dias</option></select></div><div><label for="alim">Até</label><input type="date" id="alim" value="'+D.lim+'"></div></div>':"");
@@ -457,7 +470,7 @@ function saveAp(force){coll();if(!D.c){toast("Cadastre ou escolha uma cliente");
  var base={c:D.c,sv:D.sv.slice(),h:D.h,dur:D.dur,p:D.p,nt:D.nt,lem:D.lem};
  if(D.id){if(!force){var cf0=conflitos([D.dt]);if(cf0.length){confM(cf0);return}}var a=ap(D.id);Object.assign(a,base,{dt:D.dt,st:D.st,fp:D.fp});
   if(a.st=="Faturado"&&!a.fid){var f={id:uid(),tp:"R",v:a.p,desc:"Atendimento: "+(cl(a.c)?cl(a.c).n:""),dt:a.dt,pg:a.dt,fp:a.fp,ap:a.id};S.f.push(f);a.fid=f.id}
-  else if(a.st!="Faturado"&&a.fid){S.f=S.f.filter(function(x){return x.id!=a.fid});delete a.fid}
+  else if(a.st!="Faturado"&&a.fid){S.f=S.f.filter(function(x){return x.id!=a.fid});delete a.fid;a.nf=true}
   else if(a.fid){var g=S.f.find(function(x){return x.id==a.fid});if(g){g.v=a.p;g.fp=a.fp}}}
  else{var ds=[D.dt];if(D.rec){var st={w:7,q:15,t:30}[D.freq]||7,x=D.dt;for(var i=0;i<60;i++){x=addD(x,st);if(x>D.lim)break;ds.push(x)}}
   if(!force){var cf=conflitos(ds);if(cf.length){confM(cf);return}}
@@ -525,7 +538,7 @@ function saveFin(id){var o={tp:$("ftR").classList.contains("on")?"R":"P",v:+$("f
  if(id)Object.assign(S.f.find(function(x){return x.id==id}),o);else{var n=Math.max(1,+$("fn").value||1);for(var i=0;i<n;i++){var d=pd(o.dt);d.setMonth(d.getMonth()+i);S.f.push({id:uid(),tp:o.tp,v:Math.round(o.v/n*100)/100,desc:o.desc,dt:iso(d),pg:n>1?"":o.pg,fp:o.fp,par:n>1?(i+1)+"/"+n:""})}}
  save();closeM();render()}
 function baixa(id){var f=S.f.find(function(x){return x.id==id});f.pg=iso(new Date());save();closeM();render()}
-function delFin(id){var f=S.f.find(function(x){return x.id==id});if(f&&f.ap){var a=ap(f.ap);if(a){a.st="Finalizado";delete a.fid}}S.f=S.f.filter(function(x){return x.id!=id});save();closeM();render()}
+function delFin(id){var f=S.f.find(function(x){return x.id==id});if(f&&f.ap){var a=ap(f.ap);if(a){a.st="Finalizado";delete a.fid;a.nf=true}}S.f=S.f.filter(function(x){return x.id!=id});save();closeM();render()}
 
 /* ---- importar listas ---- */
 function norm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"")}
@@ -557,7 +570,7 @@ function doImp(k){var rows=parseTab($("imt").value);if(!rows.length){toast("Cole
 
 var IC={agenda:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',clientes:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 5.2a3.3 3.3 0 0 1 0 6.6M18 14.8c2 .6 3.2 2.3 3.5 5.2"/></svg>',servicos:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/></svg>',fin:'<svg viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="3.5" y="7.5" width="17" height="12" rx="3"/><path d="M16 13.5h2"/></svg>'};
 var T=[["agenda","Agenda"],["clientes","Clientes"],["servicos","Serviços"],["fin","Financeiro"]];
-function render(){if(!KEY)return;var y=window.scrollY;
+function render(){if(!KEY)return;if(fechaDia())save();var y=window.scrollY;
  $("tabs").innerHTML=T.map(function(t){return '<button type="button" class="'+(tab==t[0]?"on":"")+'" aria-label="'+t[1]+'" onclick="if(tab!=\''+t[0]+'\'){q=\'\';sf=[]}tab=\''+t[0]+'\';render()">'+IC[t[0]]+'<span>'+t[1]+'</span></button>'}).join("");
  $("ttl").textContent=T.filter(function(t){return t[0]==tab})[0][1];
  $("v").innerHTML=tab=="agenda"?agendaV():tab=="clientes"?clientsV():tab=="servicos"?servicesV():finV();window.scrollTo(0,y);var vk=tab=="agenda"&&view=="1d"?day:"";if(vk&&vk!=window._vk){var g=document.querySelector(".slot.go");if(g)window.scrollTo(0,Math.max(0,g.getBoundingClientRect().top+window.scrollY-130))}window._vk=vk}
