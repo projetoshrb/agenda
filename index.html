@@ -318,7 +318,7 @@ function setTheme(t){lsSet("agm_theme",t);var r=document.documentElement;if(t=="
 /* ---- ajustes: planilha, backup e segurança ---- */
 $("bk").onclick=function(){openM('<h2>Ajustes</h2><h3>Planilha do Google</h3><p class="mu">Os dados ficam neste aparelho e, com a planilha conectada, também no Google Sheets.</p><label for="su">Endereço do Apps Script</label><input id="su" value="'+esc(CFG.url)+'"><label for="st">Senha da planilha</label><input id="st" type="password" autocomplete="off" value="'+esc(CFG.tok)+'"><div class="bar"><button class="btn p" id="sc" type="button">Salvar e conectar</button><button class="btn" id="sy" type="button">Sincronizar agora</button></div>'+
  '<h3>Backup em arquivo</h3><div class="bar"><button class="btn p" id="bd" type="button">Baixar backup</button><button class="btn" id="bc" type="button">Baixar clientes (CSV)</button></div><label for="bf">Restaurar de arquivo .json</label><input type="file" id="bf" accept=".json,application/json">'+
- '<h3>Aparência</h3><div class="seg" id="thm">'+themeBtns()+'</div><h3>Segurança</h3><p class="mu">O app bloqueia sozinho depois de 5 minutos fora da tela ou 10 minutos parado.</p><label for="np1">Nova senha do app</label><input id="np1" type="password" autocomplete="new-password"><label for="np2">Repita a nova senha</label><input id="np2" type="password" autocomplete="new-password"><div class="bar"><button class="btn" type="button" onclick="changePw()">Alterar senha do app</button><button class="btn" type="button" onclick="closeM();lockNow()">Bloquear agora</button></div><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
+ '<h3>Importação única</h3><button class="btn" id="iab" type="button" onclick="iaOpen()">Importar agendamentos do sistema antigo</button><h3>Aparência</h3><div class="seg" id="thm">'+themeBtns()+'</div><h3>Segurança</h3><p class="mu">O app bloqueia sozinho depois de 5 minutos fora da tela ou 10 minutos parado.</p><label for="np1">Nova senha do app</label><input id="np1" type="password" autocomplete="new-password"><label for="np2">Repita a nova senha</label><input id="np2" type="password" autocomplete="new-password"><div class="bar"><button class="btn" type="button" onclick="changePw()">Alterar senha do app</button><button class="btn" type="button" onclick="closeM();lockNow()">Bloquear agora</button></div><div class="bar"><button class="btn" type="button" onclick="closeM()">Fechar</button></div>');
  $("sc").onclick=function(){var u=$("su").value.trim();if(u.indexOf("https://script.google.com/")!=0){toast("O endereço deve começar com https://script.google.com/");return}if(!$("st").value){toast("Informe a senha da planilha");return}
   CFG.url=u;CFG.tok=$("st").value;lsSet("agm_cfg",JSON.stringify({url:CFG.url}));CONF=null;
   dirty=(S.c.length+S.a.length+S.f.length)>0;meta();persistQ();setSync("conectando…");closeM();if(dirty)push();else pull();toast("Conectando à planilha…")};
@@ -568,6 +568,35 @@ function doImp(k){var rows=parseTab($("imt").value);if(!rows.length){toast("Cole
   else{if(S.s.some(function(s){return s.n.toLowerCase()==nome.toLowerCase()})){skip++;return}
    S.s.push({id:uid(),n:nome,e:g("e")||"Geral",d:ndur(g("d")),p:nnum(g("p")),pm:nnum(g("pm")),ds:g("ds")});add++}});
  if(add)save();closeM();render();toast(add+" importado(s)"+(skip?" · "+skip+" ignorado(s): sem nome ou já existiam":""))}
+/* ---- IMPORTAÇÃO TEMPORÁRIA DE AGENDAMENTOS (remover depois do uso) ---- */
+var IA=null;
+function nsv(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\([^)]*\)/g,"").replace(/fyber/g,"fibra").replace(/[^a-z0-9]/g,"")}
+function iaDur(s,df){var n=parseInt(s,10);return n>0?n:df}
+function iaOpen(){openM('<h2>Importar agendamentos</h2><p class="mu">Escolha o arquivo <b>agendamentos_programa_salao.csv</b>. Antes de gravar, você confere como cada serviço será ligado. Nada é apagado: só são acrescentados agendamentos, bloqueios e clientes que ainda não existem. Dá para importar o mesmo arquivo de novo sem duplicar.</p><label for="iaf">Arquivo .csv</label><input type="file" id="iaf" accept=".csv,.txt,text/csv,text/plain"><div id="iar"></div>');
+ $("iaf").onchange=function(){var f=this.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){iaPrev(rd.result)};rd.readAsText(f)}}
+function iaPrev(t){var rows=parseTab(t);if(rows.length<2){toast("Arquivo vazio");return}
+ var m=mapCols(rows[0],{dt:["data"],h:["inicio"],du:["duracaomin","duracao"],tp:["tipo"],c:["cliente"],w:["telefone"],sv:["servicos"],v:["valorr","valor"],st:["status"],nt:["observacao"]});
+ if(m.dt===undefined||m.h===undefined||m.tp===undefined){toast("Esse não parece o arquivo de agendamentos");return}
+ var L=[],names={};rows.slice(1).forEach(function(r){var g=function(f){return m[f]===undefined?"":String(r[m[f]]||"").trim()},o={dt:nd(g("dt")),h:g("h"),du:g("du"),blk:norm(g("tp")).indexOf("bloq")==0,c:g("c"),w:g("w"),v:nnum(g("v")),st:g("st"),nt:g("nt"),sv:[]};
+  if(!o.dt||!/^\d{1,2}:\d{2}$/.test(o.h))return;if(o.h.length==4)o.h="0"+o.h;
+  g("sv").split(/\s*,\s*/).forEach(function(x){x=x.trim();if(x){o.sv.push(x);names[x]=1}});L.push(o)});
+ var nm=Object.keys(names),opts=function(sel){return '<option value="">Sem serviço</option><option value="+"'+(sel=="+"?" selected":"")+'>Criar como novo serviço</option>'+S.s.map(function(s){return '<option value="'+s.id+'"'+(sel==s.id?" selected":"")+'>'+esc(s.n)+'</option>'}).join("")};
+ var hit={};nm.forEach(function(n){var k=nsv(n),s=S.s.find(function(x){return nsv(x.n)==k});hit[n]=s?s.id:"+"});
+ var nb=L.filter(function(o){return o.blk}).length,nc={};L.forEach(function(o){if(!o.blk&&o.c)nc[norm(o.c)]=1});
+ IA={L:L,nm:nm};
+ $("iar").innerHTML='<h3>Resumo</h3><p>'+(L.length-nb)+' agendamentos e '+nb+' bloqueios ('+Object.keys(nc).length+' clientes diferentes).</p><h3>Como ligar cada serviço</h3><p class="mu">O app já escolheu o mais parecido. Se não achou, ele cria o serviço novo (você pode ligar a um que já existe).</p>'+nm.map(function(n,i){return '<label for="ias'+i+'">'+esc(n)+'</label><select id="ias'+i+'">'+opts(hit[n])+'</select>'}).join("")+'<div class="bar"><button class="btn p" type="button" onclick="iaGo()">Importar agora</button><button class="btn" type="button" onclick="closeM()">Cancelar</button></div>'}
+function iaGo(){if(!IA)return;var map={};IA.nm.forEach(function(n,i){map[n]=$("ias"+i).value});
+ var today=iso(new Date()),novoS={},addA=0,addB=0,addC=0,skip=0;
+ var findC=function(o){var d=o.w.replace(/\D/g,"").slice(-8),k=norm(o.c);return S.c.find(function(c){var cd=String(c.w||"").replace(/\D/g,"").slice(-8);return (d.length>=8&&cd==d)||norm(c.n)==k})};
+ IA.L.forEach(function(o){var dur=iaDur(o.du,60),st=tm(o.h);if(st+dur>1440)dur=1440-st;
+  if(o.blk){if(S.a.some(function(a){return a.blk&&a.dt==o.dt&&a.h==o.h})){skip++;return}
+   S.a.push({id:uid(),blk:true,dt:o.dt,h:o.h,dur:dur,nt:o.nt||"Bloqueio",st:"Confirmado",sv:[],p:0});addB++;return}
+  var c=findC(o);if(!c){if(!o.c){skip++;return}c={id:uid(),n:o.c,ap:"",w:o.w,em:"",nasc:"",ob:"",nt:true};S.c.push(c);addC++}
+  if(S.a.some(function(a){return !a.blk&&a.c==c.id&&a.dt==o.dt&&a.h==o.h})){skip++;return}
+  var ids=[];o.sv.forEach(function(n){var v=map[n];if(v=="+"){if(!novoS[n]){var s={id:uid(),n:n,e:"Geral",d:o.sv.length==1?dur:60,p:o.sv.length==1?o.v:0,pm:0,ds:""};S.s.push(s);novoS[n]=s.id}v=novoS[n]}if(v)ids.push(v)});
+  var a={id:uid(),c:c.id,sv:ids,dt:o.dt,h:o.h,dur:dur,p:o.v,st:ST.indexOf(o.st)>=0?o.st:"Confirmado",nt:o.nt||""};
+  if(o.dt<=today)a.nf=true;S.a.push(a);addA++});
+ IA=null;save();closeM();render();toast(addA+" agendamentos, "+addB+" bloqueios e "+addC+" clientes novos"+(skip?" · "+skip+" já existiam":""))}
 
 var IC={agenda:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',clientes:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 5.2a3.3 3.3 0 0 1 0 6.6M18 14.8c2 .6 3.2 2.3 3.5 5.2"/></svg>',servicos:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/></svg>',fin:'<svg viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="3.5" y="7.5" width="17" height="12" rx="3"/><path d="M16 13.5h2"/></svg>'};
 var T=[["agenda","Agenda"],["clientes","Clientes"],["servicos","Serviços"],["fin","Financeiro"]];
