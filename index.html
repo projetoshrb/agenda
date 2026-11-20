@@ -160,6 +160,7 @@ body{overflow-x:clip;max-width:100%}
 .sheet input,.sheet select,.sheet textarea{min-width:0}
 a.btn{color:var(--fg);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}a.btn.p{color:var(--onac)}
 .tl .slot{cursor:pointer;-webkit-tap-highlight-color:rgba(163,41,79,.14)}.tl .slot:active{background:rgba(163,41,79,.10)}
+.dnav{position:sticky;top:var(--hh,60px);z-index:14;background:var(--bg);padding:6px 0;margin:0 0 4px}
 </style>
 
 </head>
@@ -355,7 +356,7 @@ function nav(n){if(view=="1d")day=addD(day,n);else if(view=="7d")day=addD(day,7*
 function agendaV(){
  var d=pd(day),lab=view=="mes"?MES[d.getMonth()]+" "+d.getFullYear():DOW[d.getDay()]+", "+d.getDate()+" "+MES[d.getMonth()].slice(0,3)+" "+d.getFullYear();
  var h='<div class="bar">'+(view!="1d"?'<button class="btn p" type="button" onclick="newAp()">Novo agendamento</button>':"")+'<button class="btn" type="button" onclick="openBlk()">Bloquear horário</button><button class="btn" type="button" onclick="lemM()">Lembretes</button><button class="btn" type="button" onclick="livreM(true)">Horários livres</button><button class="btn" type="button" onclick="fo=!fo;render()">Filtros'+((sf.length||q)?' ('+(sf.length+(q?1:0))+')':"")+'</button><span class="seg">'+["1d","7d","mes"].map(function(v){return '<button type="button" class="'+(view==v?"on":"")+'" onclick="view=\''+v+'\';render()">'+(v=="mes"?"Mês":v.toUpperCase())+'</button>'}).join("")+'</span></div>';
- h+='<div class="bar"><button class="btn sm" type="button" aria-label="Anterior" onclick="nav(-1)">‹</button><button class="btn sm" type="button" onclick="day=iso(new Date());render()">Hoje</button><button class="btn sm" type="button" aria-label="Próximo" onclick="nav(1)">›</button><span class="dl"><b>'+esc(lab)+' ▾</b><input type="date" id="jd" aria-label="Escolher a data" value="'+day+'" onchange="day=this.value||day;render()"></span></div>';
+ h+='<div class="bar dnav"><button class="btn sm" type="button" aria-label="Anterior" onclick="nav(-1)">‹</button><button class="btn sm" type="button" onclick="day=iso(new Date());render()">Hoje</button><button class="btn sm" type="button" aria-label="Próximo" onclick="nav(1)">›</button><span class="dl"><b>'+esc(lab)+' ▾</b><input type="date" id="jd" aria-label="Escolher a data" value="'+day+'" onchange="day=this.value||day;render()"></span></div>';
  if(fo||sf.length||q)h+='<div class="bar"><input id="qs" class="grow" style="margin:0" placeholder="Buscar cliente ou serviço" value="'+esc(q)+'" oninput="q=this.value;var p=this.selectionStart;render();var e=$(\'qs\');e.focus();e.setSelectionRange(p,p)"></div>';
  if(fo||sf.length||q)h+='<div class="chips">'+ST.map(function(s,i){return '<button type="button" class="chip'+(sf.indexOf(s)>=0?" on":"")+'" onclick="togSf(\''+s+'\')"><span style="color:var(--s-'+SC[i]+')">●</span> '+s+'</button>'}).join("")+(sf.length||q?'<button type="button" class="chip" onclick="sf=[];q=\'\';render()">Limpar</button>':"")+'</div>';
  h+=view=="1d"?dayH():view=="7d"?weekH():monthH();return h}
@@ -573,7 +574,7 @@ var T=[["agenda","Agenda"],["clientes","Clientes"],["servicos","Serviços"],["fi
 function render(){if(!KEY)return;if(fechaDia())save();var y=window.scrollY;
  $("tabs").innerHTML=T.map(function(t){return '<button type="button" class="'+(tab==t[0]?"on":"")+'" aria-label="'+t[1]+'" onclick="if(tab!=\''+t[0]+'\'){q=\'\';sf=[]}tab=\''+t[0]+'\';render()">'+IC[t[0]]+'<span>'+t[1]+'</span></button>'}).join("");
  $("ttl").textContent=T.filter(function(t){return t[0]==tab})[0][1];
- $("v").innerHTML=tab=="agenda"?agendaV():tab=="clientes"?clientsV():tab=="servicos"?servicesV():finV();window.scrollTo(0,y);var vk=tab=="agenda"&&view=="1d"?day:"";if(vk&&vk!=window._vk){var g=document.querySelector(".slot.go");if(g)window.scrollTo(0,Math.max(0,g.getBoundingClientRect().top+window.scrollY-130))}window._vk=vk}
+ $("v").innerHTML=tab=="agenda"?agendaV():tab=="clientes"?clientsV():tab=="servicos"?servicesV():finV();window.scrollTo(0,y);var vk=tab=="agenda"&&view=="1d"?day:"";var hd=document.querySelector(".hdr");if(hd)document.documentElement.style.setProperty("--hh",hd.offsetHeight+"px");if(vk&&!window._vk){var g=document.querySelector(".slot.go");if(g)window.scrollTo(0,Math.max(0,g.getBoundingClientRect().top+window.scrollY-130))}window._vk=vk}
 
 boot();
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")==0)navigator.serviceWorker.register("sw.js").catch(function(){});
