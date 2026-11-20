@@ -164,7 +164,9 @@ a.btn{color:var(--fg);text-decoration:none;display:inline-flex;align-items:cente
 
 .ev .ph{font-weight:400;font-size:.85em;color:var(--evfg);opacity:.55;margin-left:2px}
 .ev .ph{display:inline-block;white-space:nowrap}
-.tl .ev.tight .ph,.tl .ev.nar .ph{display:none}
+.tl .ev.nar .ph{display:none}
+.tl .ev.tight .row b{white-space:nowrap;text-overflow:ellipsis}
+.tl .ev.tight .ph{display:inline}
 .ev .ph{font-size:.75em}
 </style>
 
@@ -231,10 +233,14 @@ function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
 function b64(a){var s="";new Uint8Array(a).forEach(function(x){s+=String.fromCharCode(x)});return btoa(s)}
 function unb64(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
-function deriveKey(pw,salt,iter){return crypto.subtle.importKey("raw",TE.encode(pw),"PBKDF2",false,["deriveKey"]).then(function(k){return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:iter,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])})}
+function deriveKey(pw,salt,iter){return crypto.subtle.importKey("raw",TE.encode(pw),"PBKDF2",false,["deriveKey"]).then(function(k){return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:iter,hash:"SHA-256"},k,{name:"AES-GCM",length:256},true,["encrypt","decrypt"])})}
 function encJ(key,o){var iv=crypto.getRandomValues(new Uint8Array(12));return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,TE.encode(JSON.stringify(o))).then(function(c){return b64(iv)+"."+b64(c)})}
 function decJ(key,s){var p=s.split(".");return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(p[0])},key,unb64(p[1])).then(function(b){return JSON.parse(TD.decode(b))})}
 function persist(){if(!KEY||!VAULT)return Promise.resolve();return encJ(KEY,{S:S,tok:CFG.tok}).then(function(d){VAULT.d=d;lsSet("agm_vault",JSON.stringify({v:1,salt:VAULT.salt,iter:VAULT.iter,d:d}))})}
+function skSet(){try{crypto.subtle.exportKey("raw",KEY).then(function(b){try{sessionStorage.setItem("agm_sk",b64(b))}catch(e){}},function(){})}catch(e){}}
+function skDel(){try{sessionStorage.removeItem("agm_sk")}catch(e){}}
+function skTry(){var r=null;try{r=sessionStorage.getItem("agm_sk")}catch(e){}if(!r||!VAULT)return Promise.resolve(false);
+ return crypto.subtle.importKey("raw",unb64(r),"AES-GCM",true,["encrypt","decrypt"]).then(function(k){return decJ(k,VAULT.d).then(function(o){KEY=k;S=o.S;CFG.tok=o.tok||"";lastJson=JSON.stringify(S);return true})}).catch(function(){skDel();return false})}
 function persistQ(){pq=pq.then(persist).catch(function(){});return pq}
 function meta(){lsSet("agm_meta",JSON.stringify({rv:rv,dirty:dirty}))}
 function setSync(t){$("sync").textContent=t}
@@ -253,22 +259,22 @@ $("lkf").onsubmit=function(e){e.preventDefault();var pw=$("lk-pw").value;lkErr("
   if(pw!==$("lk-pw2").value){lkErr("As senhas não conferem.");return}
   lkBusy(true);var salt=crypto.getRandomValues(new Uint8Array(16));
   deriveKey(pw,salt,ITER).then(function(k){KEY=k;VAULT={salt:b64(salt),iter:ITER};S=LEG&&LEG.S?LEG.S:defS();CFG.tok=LEG&&LEG.tok?LEG.tok:"";lastJson=JSON.stringify(S);return persist()})
-  .then(function(){lsDel("agm2");lsSet("agm_cfg",JSON.stringify({url:CFG.url}));LEG=null;lkBusy(false);unlocked()},function(){KEY=null;VAULT=null;lkBusy(false);lkErr("Não foi possível criar a senha neste navegador.")})
+  .then(function(){lsDel("agm2");lsSet("agm_cfg",JSON.stringify({url:CFG.url}));LEG=null;skSet();lkBusy(false);unlocked()},function(){KEY=null;VAULT=null;lkBusy(false);lkErr("Não foi possível criar a senha neste navegador.")})
  }else{
   lkBusy(true);
   deriveKey(pw,unb64(VAULT.salt),VAULT.iter).then(function(k){return decJ(k,VAULT.d).then(function(o){return {k:k,o:o}})})
-  .then(function(r){KEY=r.k;S=r.o.S;CFG.tok=r.o.tok||"";lastJson=JSON.stringify(S);lkBusy(false);unlocked()},function(){lkBusy(false);lkErr("Senha incorreta.");$("lk-pw").value="";$("lk-pw").focus()})}};
+  .then(function(r){KEY=r.k;S=r.o.S;CFG.tok=r.o.tok||"";lastJson=JSON.stringify(S);skSet();lkBusy(false);unlocked()},function(){lkBusy(false);lkErr("Senha incorreta.");$("lk-pw").value="";$("lk-pw").focus()})}};
 $("lk-f").onclick=function(){$("lkf").hidden=true;$("lk-fc").hidden=false;$("lk-e").textContent=""};
 $("lk-no").onclick=function(){showLock("entrar")};
-$("lk-yes").onclick=function(){lsDel("agm_vault");lsDel("agm2");lsDel("agm_meta");VAULT=null;LEG=null;KEY=null;rv=0;dirty=false;S=defS();CFG.tok="";lastJson="";showLock("criar")};
-function lockNow(){if(!KEY)return;clearTimeout(lockT);clearTimeout(saveT);
+$("lk-yes").onclick=function(){skDel();lsDel("agm_vault");lsDel("agm2");lsDel("agm_meta");VAULT=null;LEG=null;KEY=null;rv=0;dirty=false;S=defS();CFG.tok="";lastJson="";showLock("criar")};
+function lockNow(){if(!KEY)return;skDel();clearTimeout(lockT);clearTimeout(saveT);
  persistQ().then(function(){KEY=null;S=defS();CFG.tok="";lastJson="";CONF=null;closeM();$("v").innerHTML="";setSync("");showLock("entrar")})}
 function armIdle(){clearTimeout(lockT);if(KEY)lockT=setTimeout(lockNow,IDLE)}
 ["pointerdown","keydown","scroll"].forEach(function(e){document.addEventListener(e,armIdle,{passive:true})});
 $("lkb").onclick=lockNow;
 function changePw(){var a=$("np1").value,b=$("np2").value;if(a.length<6){toast("Use ao menos 6 caracteres");return}if(a!==b){toast("As senhas não conferem");return}
  var salt=crypto.getRandomValues(new Uint8Array(16));
- deriveKey(a,salt,ITER).then(function(k){KEY=k;VAULT={salt:b64(salt),iter:ITER};return persistQ()}).then(function(){closeM();toast("Senha do app alterada")})}
+ deriveKey(a,salt,ITER).then(function(k){KEY=k;VAULT={salt:b64(salt),iter:ITER};skSet();return persistQ()}).then(function(){closeM();toast("Senha do app alterada")})}
 function startApp(){render();armIdle();
  if(CFG.url&&CFG.tok){if(dirty)push();else pull()}
  else if(CFG.url){setSync("falta a senha");$("bk").click()}
@@ -340,7 +346,7 @@ function boot(){
  CFG.url=c.url||URL_PADRAO;
  try{var m=JSON.parse(lsGet("agm_meta")||"{}");rv=m.rv||0;dirty=!!m.dirty}catch(e){}
  var raw=lsGet("agm_vault");if(raw){try{VAULT=JSON.parse(raw)}catch(e){VAULT=null}}
- if(VAULT){showLock("entrar");return}
+ if(VAULT){skTry().then(function(ok){if(ok)unlocked();else showLock("entrar")});return}
  var old=null,l=lsGet("agm2");if(l){try{var o=JSON.parse(l);if(o&&o.a)old=o}catch(e){}}
  if(old||c.tok)LEG={S:old,tok:c.tok||""};
  if(old&&!lsGet("agm_meta")){dirty=true;meta()}
